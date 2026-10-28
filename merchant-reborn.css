@@ -1,0 +1,86 @@
+/* ASHFALL V9.4.2 — Merchant Reborn. Scoped UI, no old merchant markup. */
+#refuge-page-merchant .mr-shell{color:#e2eff5;padding:8px 0 28px;font-family:inherit}
+#refuge-page-merchant .mr-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 16px;font-size:19px;letter-spacing:.11em}
+#refuge-page-merchant .mr-money{font-size:13px;letter-spacing:0;color:#f3bc71;white-space:nowrap}
+#refuge-page-merchant .mr-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+#refuge-page-merchant .mr-tabs button{padding:14px 8px;color:#97b2c0;background:#122938;border:1px solid #325268;border-radius:12px;font-weight:800;letter-spacing:.08em}
+#refuge-page-merchant .mr-tabs button.on{background:#223f50;border-color:#75d8db;color:#eaffff}
+#refuge-page-merchant .mr-categories{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:13px;padding-bottom:4px}
+#refuge-page-merchant .mr-categories button{white-space:nowrap;padding:8px 12px;border:1px solid #2d5264;border-radius:20px;background:#0a202e;color:#b3cbd5;font-size:12px}
+#refuge-page-merchant .mr-categories button.on{border-color:#6ee1e7;background:#19475a;color:white}
+#refuge-page-merchant .mr-subtitle{color:#a0b5be;font-size:12px;margin-bottom:10px}
+#refuge-page-merchant .mr-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+#refuge-page-merchant .mr-item{min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;min-height:139px;padding:12px 5px 9px;background:linear-gradient(145deg,#172b3b,#0a1a28);border:1px solid #315064;border-bottom:2px solid var(--mr-rarity,#65cbd8);border-radius:13px;color:#e6f2f6}
+#refuge-page-merchant .mr-item.mr-selected{border-color:#85e6ec;box-shadow:0 0 0 1px #75ced7}
+#refuge-page-merchant .mr-item.mr-sold{opacity:.48}
+#refuge-page-merchant .mr-art{display:flex;align-items:center;justify-content:center;width:64px;height:64px;max-width:100%}
+#refuge-page-merchant .mr-art svg{width:100%;height:100%;max-height:64px}
+#refuge-page-merchant .mr-name{font-weight:700;font-size:11px;line-height:1.2;text-align:center;overflow-wrap:anywhere}
+#refuge-page-merchant .mr-cost{font-size:11px;color:#e8bd7f;font-weight:800}
+#refuge-page-merchant .mr-detail{position:relative;margin-top:14px;padding:18px 12px;background:#0b2230;border:1px solid #63b6c6;border-radius:14px}
+#refuge-page-merchant .mr-detail-head{display:flex;align-items:center;gap:15px;padding-right:22px}
+#refuge-page-merchant .mr-detail-icon{width:80px;flex-shrink:0}#refuge-page-merchant .mr-detail-icon svg{width:80px;height:80px}
+#refuge-page-merchant .mr-detail h3{font-size:17px;line-height:1.25;margin:6px 0}#refuge-page-merchant .mr-detail small{color:#abc5d1}#refuge-page-merchant .mr-detail strong{color:#f4c188}
+#refuge-page-merchant .mr-detail p{font-size:13px;color:#bdd5de;margin:14px 0}
+#refuge-page-merchant .mr-close{position:absolute;top:8px;right:8px;background:transparent;color:#ddeaf0;border:0;padding:7px;font-size:20px}
+#refuge-page-merchant .mr-confirm{width:100%;padding:14px;border-radius:10px;background:#d5ae72;color:#14212c;font-weight:900;border:0}#refuge-page-merchant .mr-confirm:disabled{opacity:.45}
+#refuge-page-merchant .mr-empty{grid-column:1/-1;text-align:center;padding:24px;color:#aabfc8}
+
+/* V9.4.5 — merchant responsive iPhone compact: isolated from game/HUD */
+#refuge-page-merchant, #merchantPageContent, #refuge-page-merchant .mr-shell {min-width:0; max-width:100%; box-sizing:border-box;}
+#refuge-page-merchant .mr-shell {padding:2px 0 18px;}
+#refuge-page-merchant .mr-top {margin-bottom:9px;font-size:16px;gap:5px;letter-spacing:.06em;}
+#refuge-page-merchant .mr-money{font-size:12px;}
+#refuge-page-merchant .mr-tabs{gap:7px;margin-bottom:10px;}
+#refuge-page-merchant .mr-tabs button{padding:10px 6px;border-radius:9px;min-height:42px;}
+#refuge-page-merchant .mr-categories{gap:5px;margin-bottom:7px;padding-bottom:4px;overscroll-behavior-x:contain;}
+#refuge-page-merchant .mr-categories button{padding:7px 10px;font-size:11px;min-height:34px;}
+#refuge-page-merchant .mr-subtitle{margin-bottom:7px;font-size:11px;}
+#refuge-page-merchant .mr-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+#refuge-page-merchant .mr-item{min-height:107px;padding:8px 4px 6px;gap:3px;border-radius:9px;overflow:hidden;}
+#refuge-page-merchant .mr-art{height:48px;width:48px;}
+#refuge-page-merchant .mr-art svg{max-height:48px;}
+#refuge-page-merchant .mr-name{font-size:10px;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:100%;}
+#refuge-page-merchant .mr-cost{font-size:10px;}
+#refuge-page-merchant .mr-detail{position:fixed;z-index:2000;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));margin:0 auto;max-width:440px;max-height:calc(100dvh - 100px);overflow-y:auto;overscroll-behavior:contain;padding:15px 13px 14px;border-radius:15px;box-shadow:0 0 0 100vmax rgba(0,9,17,.78),0 12px 44px #000c;}
+#refuge-page-merchant .mr-detail-head{gap:10px;}
+#refuge-page-merchant .mr-detail-icon,#refuge-page-merchant .mr-detail-icon svg{width:65px;height:65px;}
+#refuge-page-merchant .mr-detail p{margin:9px 0;font-size:12px;line-height:1.4;}
+#refuge-page-merchant .mr-detail h3{font-size:15px;}
+#refuge-page-merchant .mr-confirm{min-height:44px;padding:10px;}
+@media (max-width:360px){#refuge-page-merchant .mr-grid{gap:5px;}#refuge-page-merchant .mr-item{min-height:100px;}#refuge-page-merchant .mr-art{width:43px;height:43px;}}
+@media (prefers-reduced-motion:no-preference){#refuge-page-merchant .mr-detail{animation:mrCompactRise .15s ease-out;}@keyframes mrCompactRise{from{opacity:.5;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}}
+
+/* ASHFALL V9.5.9 merchant art enlargement — Buy and Sell only.
+   Keep card dimensions, labels, prices, borders and grid unchanged. */
+#refuge-page-merchant .mr-grid .mr-item .mr-art{overflow:visible;position:relative;isolation:isolate;}
+#refuge-page-merchant .mr-grid .mr-item .mr-art img.ash952-gear-img,
+#refuge-page-merchant .mr-grid .mr-item .mr-art img.weapon-art-img{
+  display:block!important;width:100%!important;height:100%!important;
+  max-width:none!important;max-height:none!important;object-fit:contain!important;
+  transform:translateY(-2px) scale(1.05);transform-origin:center center;
+  pointer-events:none;
+}
+#refuge-page-merchant .mr-grid .mr-item .mr-art svg{
+  transform:translateY(-2px) scale(1.08);transform-origin:center center;
+}
+#refuge-page-merchant .mr-grid .mr-item .mr-name,
+#refuge-page-merchant .mr-grid .mr-item .mr-cost{position:relative;z-index:1;}
+@media(max-width:360px){
+ #refuge-page-merchant .mr-grid .mr-item .mr-art img.ash952-gear-img,
+ #refuge-page-merchant .mr-grid .mr-item .mr-art img.weapon-art-img{transform:translateY(-2px) scale(1.00);}
+}
+
+/* V9.6.1 merchant image sizing: equipment contained, weapons slightly enlarged. */
+#refuge-page-merchant .mr-grid .mr-item .mr-art img.ash952-gear-img{transform:translateY(-1px) scale(1.03)!important;}
+#refuge-page-merchant .mr-grid .mr-item .mr-art img.weapon-art-img{transform:translateY(-2px) scale(1.75)!important;}
+@media(max-width:360px){#refuge-page-merchant .mr-grid .mr-item .mr-art img.weapon-art-img{transform:translateY(-2px) scale(1.58)!important;}}
+
+/* ASHFALL 0.9.7.3 — paid refresh, buy tab only */
+#refuge-page-merchant .mr-refresh{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;margin:0 0 11px;background:#162f3d;border:1px solid #45667a;border-radius:11px;box-sizing:border-box;min-width:0}
+#refuge-page-merchant .mr-refresh-info{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+#refuge-page-merchant .mr-refresh-info strong{font-size:12px;color:#e7f1f5;letter-spacing:0}
+#refuge-page-merchant .mr-refresh-info small{font-size:10px;line-height:1.35;color:#9ebac6}
+#refuge-page-merchant .mr-refresh button{flex-shrink:0;min-width:88px;min-height:40px;padding:8px 10px;border-radius:9px;border:1px solid #e4b779;background:#d8ad72;color:#122635;font-size:12px;font-weight:800}
+#refuge-page-merchant .mr-refresh button:disabled{opacity:.48;cursor:not-allowed}
+@media(max-width:360px){#refuge-page-merchant .mr-refresh{padding:8px 7px;gap:6px}#refuge-page-merchant .mr-refresh button{min-width:75px;padding:8px 6px;font-size:11px}}
