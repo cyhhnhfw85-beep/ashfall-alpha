@@ -1199,7 +1199,7 @@ function createRun(){
  // Une salle ne peut recevoir qu'un seul terminal et aucun incident concurrent.
  const available=m.rooms.filter(z=>z.kind==='standard');
  const assigned=new Set();
- const terminalPlan=m.geometryVersion===31?[]:[
+ const terminalPlan=[
   {sector:0,role:'scanner'}, {sector:1,role:'scanner'},
   {sector:1,role:'stabilizer'}, {sector:2,role:'stabilizer'},
   {sector:2,role:'medic'}, {sector:3,role:'medic'}
@@ -1220,7 +1220,7 @@ function createRun(){
  // les secteurs et distinctes des terminaux, incidents, boss et caches existants.
  // Une salle gardée compatible sert de secours si un secteur manque de salles ordinaires.
  // Les anciennes expéditions ne reçoivent jamais ces nouveaux événements.
- const discoveryPlan=m.geometryVersion===31?[]:[
+ const discoveryPlan=[
   {sector:0,role:'relay'}, {sector:1,role:'salvage'},
   {sector:1,role:'relay'}, {sector:2,role:'distress'},
   {sector:2,role:'salvage'}, {sector:3,role:'distress'},
@@ -1237,7 +1237,7 @@ function createRun(){
  }
  // 6 a 9 incidents selon la structure des secteurs. Distribution aleatoire,
  // moins agressive au debut; zones plus avancees plus mouvementees.
- const incidentPool=m.geometryVersion===31?[]:m.rooms.filter(z=>z.kind==='standard'&&!z.fieldRole&&z.depth>=2);
+ const incidentPool=m.rooms.filter(z=>z.kind==='standard'&&!z.fieldRole&&z.depth>=2);
  const chosenIncidents=[];
  const caps=[2,2,3,3];
  const minimum=[1,1,2,2];
