@@ -213,7 +213,7 @@ function e2ComparisonMarkup(selected,current){
 }
 function e2OwnedCard(w,slot,selected){
  const isOn=selected?.id===w.id,level=w.level||1;
- return `<article class="eq2-owned-card ${isOn?'is-equipped':''}" style="--eq2-rarity:${tint(w)}"><span class="eq2-mini-art">${e2ItemArt(w)}</span><div class="eq2-item-copy"><strong>${uiSafe(w.name)}</strong><small>${uiSafe(w.rar)} · Nv ${level}</small><small>${uiSafe(e2ItemStats(w))}</small></div><div class="eq2-item-actions">${isOn?'<span class="eq2-current">PORTÉ</span>':`<button data-e2-home-equip="${uiSafe(w.id)}">Équiper</button>`}${!isOn?`<button data-e2-sell="${uiSafe(w.id)}">Vendre</button>`:''}</div></article>`;
+ return `<article data-eq2-slot="${slot}" class="eq2-owned-card ${isOn?'is-equipped':''}" style="--eq2-rarity:${tint(w)}"><span class="eq2-mini-art">${e2ItemArt(w)}</span><div class="eq2-item-copy"><strong>${uiSafe(w.name)}</strong><small>${uiSafe(w.rar)} · Nv ${level}</small><small>${uiSafe(e2ItemStats(w))}</small></div><div class="eq2-item-actions">${isOn?'<span class="eq2-current">PORTÉ</span>':`<button data-e2-home-equip="${uiSafe(w.id)}">Équiper</button>`}${!isOn?`<button data-e2-sell="${uiSafe(w.id)}">Vendre</button>`:''}</div></article>`;
 }
 function e2RenderHome(){
  const host=$('ashGearConfigurator');if(!host||data.run||!data.eq2)return;
@@ -308,6 +308,7 @@ function e2Finish(won,cause){const r=data.run;if(!r?.eq2)return false;
  data.lastEconomy=won?{...r.economy,total:earnedCredits,extraction:60,contract:contractCredits,eq2Bonus:result.creditsBonus,run:data.runs+1}:data.lastEconomy;
  const fmt=w=>({id:w.id,name:w.name,rar:w.rar,dmg:w.dmg||0,rate:w.rate||0,slot:w.slot,level:w.level});
  const summary={version:2,won:!!won,cause:won?'extraction':cause,credits:earnedCredits,creditsLost:won?0:allCredits,research:data.research-prevResearch,xp:Math.floor(r.xpTotal||r.xp||0),rooms:Math.max(1,new Set(r.visited||[r.current]).size),kills:Number.isFinite(r.kills)?r.kills:null,elapsed:Number.isFinite(r.elapsedSeconds)?r.elapsedSeconds:null,retained:result.acquired.map(fmt),lost:result.lost.map(fmt),savedBag:result.acquired.length,runIndex:data.runs+1,contracts:payout.statuses.map(c=>({...c,completed:!!(won&&c.complete)})),contract:contract?{...contract,completed:!!(won&&contract.complete)}:null};
+ ashSurvivorAward(summary);
  data.runs++;data.insured=null;data.run=null;data.pendingDebrief=summary;
  ashRegisterCareer(summary);ashLongRecord(r,summary);ensureMerchant();bullets=[];closeOverlay();persist();render();showRunDebrief();
  msg(won?`Extraction : ${result.acquired.length} équipements acquis, +${earnedCredits} crédits.`:`Expédition échouée : ${result.lost.length} objets non sécurisés perdus. Équipements acquis conservés.`);
@@ -351,7 +352,7 @@ function ashContractProgress(r,c){
  return 0;
 }
 function ashContractStatuses(r){
- return ashRunContracts(r).map(c=>{const actual=ashContractProgress(r,c);return {id:c.id,name:c.name,actual,target:c.target,complete:actual>=c.target,credits:c.credits,research:c.research};});
+ return ashRunContracts(r).map(c=>{const actual=ashContractProgress(r,c);const target=c.kind==='kills'&&r.difficulty===1?Math.max(1,Math.ceil(c.target*.5)):c.target;return {id:c.id,name:c.name,actual,target,complete:actual>=target,credits:c.credits,research:c.research};});
 }
 function ashContractStatus(r){return ashContractStatuses(r)[0]||null;}
 function ashContractPayout(r,won){
@@ -366,7 +367,7 @@ function ashRenderContractSelection(){
   {key:'kills',name:'COMBAT',hint:'Éliminer les menaces',glyph:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/><path d="M12 1v5M12 18v5M1 12h5M18 12h5"/></svg>'},
   {key:'quality',name:'MATÉRIEL',hint:'Extraire du butin rare',glyph:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12l4 6-10 11L2 10zM2 10h20M9 4l3 6 3-6"/></svg>'}
  ];
- host.innerHTML='<div class="home953-heading"><div><span class="home953-eyebrow">PRÉPARATION DE MISSION</span><h3>MES CONTRATS</h3></div><span class="home953-count">3 ACTIFS</span></div><p class="home953-intro">Choisis un objectif dans chaque catégorie. Les primes sont indépendantes et obtenues après extraction.</p>'+
+ host.innerHTML=''+
  groups.map((g,i)=>'<section class="home953-contract home953-'+g.key+'" aria-label="'+g.name+'"><div class="home953-contract-head"><span class="home953-glyph">'+g.glyph+'</span><div><h4>'+g.name+'</h4><small>'+g.hint+'</small></div><span class="home953-selected">'+(selected[i].target||1)+' '+(g.key==='rooms'?'salles':g.key==='kills'?'ennemis':'objet(s)')+'</span></div><div class="home953-options" role="group" aria-label="Choix '+g.name+'">'+ASH_CONTRACTS.filter(c=>c.group===g.key).map(c=>'<button type="button" class="home953-option '+(selected[i].id===c.id?'is-active':'')+'" data-contract-choice="'+c.id+'" aria-pressed="'+(selected[i].id===c.id)+'"><strong>'+(g.key==='quality'?uiSafe(c.rar)+' ×'+c.target:c.target)+'</strong><span class="home953-rewards"><b>+'+c.credits+' CR</b><small>+'+c.research+' RECH.</small></span></button>').join('')+'</div></section>').join('')+'<div class="home953-footnote">Les trois objectifs sont suivis pendant l’expédition.</div>';
 }
 
@@ -386,7 +387,133 @@ function ashRefreshContractHud(r){
  hud.innerHTML=statuses.map((c,i)=>{const group=ashFindContract(c.id)?.group||['rooms','kills','quality'][i]||'quality';const desc=group==='rooms'?'Exploration':group==='kills'?'Combat':'Extraction de matériel';return `<span class="af-contract-item ${c.complete?'complete':''}" title="${uiSafe(desc+': '+c.name)}" aria-label="${uiSafe(desc)} ${c.actual} sur ${c.target}"><span class="af-contract-icon">${icons[group]||icons.quality}</span><strong class="af-contract-numbers">${Math.min(c.actual,c.target)}/${c.target}</strong></span>`}).join('');
  hud.classList.toggle('complete',statuses.every(c=>c.complete));
 }
+// Progression permanente V1 — indépendante des niveaux temporaires en expédition.
+const ASH_SURVIVOR_MAX_LEVEL=50;
+const ASH_SURVIVOR_MILESTONES={5:'rare',10:'epic',20:'epic',30:'epic',50:'epic'};
+function ashSurvivorThreshold(n){return Math.round((450+105*n)/10)*10;}
+function ashSurvivorProgress(){
+ let p=data.survivorProgress;
+ if(!p||typeof p!=='object')p=data.survivorProgress={version:1,level:1,xp:0,totalXp:0,claimedRewards:[],processedRuns:[],chestVouchers:[]};
+ p.version=1;p.level=Math.max(1,Math.min(50,Math.floor(Number(p.level)||1)));
+ p.xp=Math.max(0,Math.floor(Number(p.xp)||0));p.totalXp=Math.max(0,Math.floor(Number(p.totalXp)||0));
+ for(const key of ['claimedRewards','processedRuns','chestVouchers'])if(!Array.isArray(p[key]))p[key]=[];
+ return p;
+}
+function ashSurvivorAward(summary){
+ const p=ashSurvivorProgress(),runId=Math.max(1,Math.floor(Number(summary.runIndex)||1));
+ if(p.processedRuns.includes(runId))return;
+ const rooms=Math.max(0,Math.floor(Number(summary.rooms)||0));
+ const kills=Math.min(80,Math.max(0,Math.floor(Number(summary.kills)||0)));
+ const contracts=(Array.isArray(summary.contracts)?summary.contracts:[]).filter(c=>c?.completed).length;
+ // Les salles explorées sont un proxy prudent des salles sécurisées ; pas de bonus de première visite inventé.
+ const raw=rooms*30+kills*5+contracts*150+(summary.won?100:0);
+ const gained=summary.cause==='abandon'?0:summary.won?raw:Math.floor(raw/2);
+ summary.survivorXp=gained;
+ p.processedRuns.push(runId);
+ p.totalXp+=gained;p.xp+=gained;
+ const gainedLevels=[];
+ while(p.level<ASH_SURVIVOR_MAX_LEVEL&&p.xp>=ashSurvivorThreshold(p.level)){
+  p.xp-=ashSurvivorThreshold(p.level);p.level++;gainedLevels.push(p.level);
+  // Récompenses désormais réclamées manuellement dans Coffres > Récompenses.
+
+ }
+ if(p.level===ASH_SURVIVOR_MAX_LEVEL)p.xp=0;
+ summary.survivorLevel=p.level;summary.survivorLevelsGained=gainedLevels;
+}
+function ashSurvivorClaimChest(){
+ if(data.run||data.pendingDebrief||data.chestPending)return;
+ const p=ashSurvivorProgress(),voucher=p.chestVouchers[0];if(!voucher)return;
+ const tier=ASH_CHEST_TIERS.find(t=>t.id===voucher.tier);if(!tier)return;
+ const before=JSON.stringify(data);
+ const item=ashChestWeapon(ashChestRoll(tier),0,tier.id);
+ data.stash.push(item);p.chestVouchers.shift();
+ data.chestPending={tier:tier.id,tierName:tier.name,startedAt:Date.now(),item:{...item}};
+ if(!persist()){data=JSON.parse(before);msg('Récompense non enregistrée, réessaie.');return;}
+ render();refugeNavigate('chests');ashChestRender();
+}
+// Catalogue complet : une récompense pour chacun des 50 niveaux.
+const ASH_LEVEL_SPECIAL={1:'common',5:'rare',10:'epic',15:'epic',20:'epic',25:'epic',30:'epic',35:'epic',40:'epic',45:'epic',50:'epic'};
+function ashLevelReward(n){
+ const tier=ASH_LEVEL_SPECIAL[n];
+ if(tier)return {type:'chest',tier,amount:0,title:'COFFRE '+({common:'COMMUN',rare:'RARE',epic:'ÉPIQUE'}[tier]),detail:n===50?'Palier de prestige · Niveau 50':'Palier de progression'};
+ if(n%2===0)return {type:'credits',amount:Math.round((100+40*n)/10)*10,title:(100+40*n).toLocaleString('fr-FR')+' CRÉDITS',detail:'Réserve du refuge'};
+ const amount=2+Math.floor(n/4);return {type:'components',amount,title:amount+' COMPOSANTS',detail:'Améliorations et atelier'};
+}
+function ashClaimLevelReward(n){
+ if(data.run||data.pendingDebrief||data.chestPending)return;
+ const p=ashSurvivorProgress();n=Math.floor(Number(n));
+ if(!Number.isInteger(n)||n<1||n>p.level||n>50||p.claimedRewards.includes(n))return;
+ const reward=ashLevelReward(n),before=JSON.stringify(data);
+ if(reward.type==='credits')data.credits+=reward.amount;
+ else if(reward.type==='components'){
+  if(!data.eq2||!Number.isFinite(data.eq2.components)){msg('Atelier indisponible : récompense conservée.');return;}
+  data.eq2.components+=reward.amount;
+ }else{
+  const tier=ASH_CHEST_TIERS.find(t=>t.id===reward.tier);if(!tier)return;
+  const item=ashChestWeapon(ashChestRoll(tier),0,tier.id);
+  data.stash.push(item);
+  data.chestPending={tier:tier.id,tierName:tier.name,startedAt:Date.now(),item:{...item}};
+ }
+ p.claimedRewards.push(n);
+ if(!persist()){data=JSON.parse(before);msg('Sauvegarde impossible : récompense non récupérée.');return;}
+ render();ashChestRender();
+}
+let ashChestActiveTab='coffres';
+function ashChestSwitchTab(tab){ashChestActiveTab=tab==='recompenses'?'recompenses':'coffres';ashChestRender();}
+function ashRenderLevelRewards(){
+ const p=ashSurvivorProgress(),host=$('ashLevelRewardList');if(!host)return;
+ const ready=Array.from({length:p.level},(_,i)=>i+1).filter(n=>!p.claimedRewards.includes(n));
+ const count=$('ashLevelRewardCount');if(count)count.textContent=ready.length?ready.length+' À RÉCUPÉRER':'NIVEAU '+p.level+' / 50';
+ const legacy=p.chestVouchers.length?`<div class="ash-lr-legacy"><span>${p.chestVouchers.length} coffre(s) acquis avant la mise à jour</span><button type="button" data-lr-legacy>RÉCUPÉRER</button></div>`:'';
+ const levels=Array.from({length:50},(_,i)=>i+1).sort((a,b)=>{
+  const rank=n=>p.claimedRewards.includes(n)?2:n<=p.level?0:1;
+  return rank(a)-rank(b)||a-b;
+ });
+ host.innerHTML=legacy+levels.map(n=>{
+  const r=ashLevelReward(n),claimed=p.claimedRewards.includes(n),locked=n>p.level;
+  const state=claimed?'claimed':locked?'locked':'ready';
+  const icon=r.type==='chest'?'◇':r.type==='credits'?'⬡':'✦';
+  return `<article class="ash-lr-item ${state}"><span class="ash-lr-num">${String(n).padStart(2,'0')}</span><div class="ash-lr-info"><small>NIVEAU ${n}</small><strong>${icon} ${r.title}</strong><span>${r.detail}</span></div>${claimed?'<span class="ash-lr-state">OBTENU ✓</span>':locked?'<span class="ash-lr-state">VERROUILLÉ</span>':`<button type="button" data-lr-claim="${n}">RÉCUPÉRER</button>`}</article>`;
+ }).join('');
+}
+function ashRenderSurvivorProgress(){
+ const root=$('ashSurvivorProgress');if(!root)return;
+ const p=ashSurvivorProgress(),needed=ashSurvivorThreshold(p.level),max=p.level>=50;
+ const percent=max?100:Math.min(100,100*p.xp/needed);
+ const grade=p.level>=50?'LÉGENDE':p.level>=40?'ÉLITE':p.level>=30?'VÉTÉRAN':p.level>=20?'TRAQUEUR':p.level>=10?'ÉCLAIREUR':'RECRUE';
+ root.innerHTML=`<div class="ash-sp-head"><strong>NIVEAU ${p.level} — ${grade}</strong><span>${max?'NIVEAU MAX':p.xp.toLocaleString('fr-FR')+' / '+needed.toLocaleString('fr-FR')+' XP'}</span></div><div class="ash-sp-track"><div style="width:${percent}%"></div></div>`;
+}
+function ashHomeUpdate(){
+ const p=typeof data.playerPseudo==='string'?data.playerPseudo:'';
+ const btn=$('ashHomePseudoButton');if(btn){btn.textContent=p||'CHOISIS TON PSEUDO';btn.disabled=!!p;btn.classList.toggle('is-locked',!!p)}
+ const hint=$('ashHomePseudoHint');if(hint)hint.textContent=p?'':'Appuie pour choisir ton identité';
+ const s=data.ashHomeStats||{};const n=k=>Math.max(0,Math.floor(Number(s[k])||0));
+ if($('ashHomeBosses'))$('ashHomeBosses').textContent=n('bosses').toLocaleString('fr-FR');
+ if($('ashHomeKills'))$('ashHomeKills').textContent=n('kills').toLocaleString('fr-FR');
+ if($('ashHomeRecord'))$('ashHomeRecord').textContent=n('record').toLocaleString('fr-FR');
+ const finished=(Number(data.stats?.extractions)||0)+(Number(data.stats?.deaths)||0);
+ if($('ashHomeSurvival'))$('ashHomeSurvival').textContent=finished?Math.round(100*(Number(data.stats?.extractions)||0)/finished)+' %':'—';
+}
+function ashHomeInit(){
+ const btn=$('ashHomePseudoButton');if(!btn||btn.dataset.bound)return;btn.dataset.bound='1';
+ const overlay=$('ashPseudoOverlay'),input=$('ashPseudoInput'),error=$('ashPseudoError');
+ btn.addEventListener('click',()=>{if(data.playerPseudo)return;overlay.hidden=false;input.value='';error.textContent='';input.focus()});
+ $('ashPseudoCancel').addEventListener('click',()=>overlay.hidden=true);
+ $('ashPseudoConfirm').addEventListener('click',()=>{
+  if(data.playerPseudo){overlay.hidden=true;return}
+  const value=input.value.trim();if(!/^[A-Za-z0-9_-]{3,16}$/.test(value)){error.textContent='Pseudo invalide : 3 à 16 caractères autorisés.';return}
+  if(!window.confirm('Valider définitivement le pseudo « '+value+' » ? Il ne pourra plus être modifié.'))return;
+  data.playerPseudo=value;persist();overlay.hidden=true;ashHomeUpdate();
+ });
+}
+
 function ashRegisterCareer(summary){
+ if(!data.ashHomeStats||typeof data.ashHomeStats!=='object')data.ashHomeStats={kills:0,record:0,bosses:0};
+ if(Number.isFinite(summary.kills)){
+  const k=Math.max(0,Math.floor(summary.kills));data.ashHomeStats.kills=(Number(data.ashHomeStats.kills)||0)+k;
+  data.ashHomeStats.record=Math.max(Number(data.ashHomeStats.record)||0,k);
+ }
+
  // Seulement les expéditions achevées à partir de cette version.
  if(!data.career||typeof data.career!=='object')data.career={history:[],totalCredits:0,totalResearch:0,contracts:0};
  const career=data.career;
@@ -553,7 +680,7 @@ function salvagePrice(w){
 function premium(){return Math.max(20,Math.ceil(value(data.equipped)*.12))}
 function price(){return Math.round(value(data.equipped)*.55)}
 function tint(w){return ({'Commun':'#d9e2e9','Inhabituel':'#60de98','Rare':'#5aa9ff','Épique':'#c184ff','Légendaire':'#ffbd4c','Mythique':'#ff667c'})[w.rar]||'#d9e2e9'}
-function makeWeapon(level=0){return ashWeaponRoll(Math.max(1,Math.min(4,level+1)));}
+function makeWeapon(level=0){return ashWeaponRoll(Math.max(1,Math.min(4,level+1)),E2?.rollExpeditionRarity?.('enemy',data.run?.difficulty||1)||'Commun');}
 
 // ASHFALL 0.8.9.73 — Configuration tactique du survivant.
 // Ces modules sont débloqués une fois, puis équipés au refuge. Ils ne tombent pas au sol,
@@ -640,7 +767,7 @@ function ashGearAction(id,remove=false){
  render();msg(remove?'Équipement retiré.':`${item.name} prêt pour la prochaine expédition.`);
 }
 
-const maxHp=()=>100+data.hpLv*15+labLevel('bio01')*6;
+const maxHp=()=>100+data.hpLv*15+labLevel('bio01')*8;
 const damage=()=>data.run.equipped.dmg+data.dmgLv*3+(data.run?.eq2?Math.round((data.run.equipped.dmg||0)*(.06*(data.run.equipped.upgrade||0)+(data.run.equipped.optimized==='dmg'?.05:0))):0);
 
 // V41: une salle logique peut occuper plusieurs cellules locales de 360x400.
@@ -750,12 +877,12 @@ function roomWalls(room){
  }
  wallCache.set(room,walls);return walls;
 }
-// Camera only affects rendering. World coordinates and collision data stay untransformed.
+// Classic overhead camera. Experimental 2.5D foreshortening removed.
 let roomCamera={x:0,y:0,zoom:1,id:-1};
 function cameraFor(room){
  const modern=data.run?.geometryVersion===25||data.run?.geometryVersion===31;
  const g=roomGeom(room),zoom=modern?0.96:(window.AshP01Graphics?.applies(room,sectorOf(room))?0.90:(g.type==='single'?1:.84));
- const sightW=360/zoom,sightH=(modern?Math.max(1,cv.height):400)/zoom;
+ const sightW=360/zoom,sightH=(modern?Math.max(1,cv.height):400)/(zoom*1);
  const targetX=g.w<sightW?(g.w-sightW)/2:clamp((player?.x||180)-sightW/2,0,g.w-sightW);
  const targetY=g.h<sightH?(g.h-sightH)/2:clamp((player?.y||200)-sightH/2,0,g.h-sightH);
  if(roomCamera.id!==room.id){roomCamera={x:targetX,y:targetY,zoom,id:room.id}}
@@ -837,7 +964,7 @@ function makeMap25(){
  const m=window.AshGenerator25.generate(seed,25);window.AshGenerator25.validate(m);
  const rooms=m.rooms.map(n=>({id:n.id,gx:n.x,gy:n.y,shape:n.shape,depth:n.depth,sector:n.sector,kind:n.kind,
   seen:n.id===0,spawned:false,enemies:[],chest:n.kind==='start'||n.kind==='exit'||n.kind==='boss'?'none':Math.random()<.63?'closed':'none',
-  activated:false,cleared:false,arenaWave:0,arenaReward:false,solidDecorV42:true}));
+  activated:false,cleared:false,arenaWave:0,arenaReward:false,solidDecorV42:true,envArchitectureV4:true}));
  const arenaIds=[],exitIds=m.exitIds.slice(),outpostIds=[];
  // Rebalance encounter density for fewer, bigger rooms.
  for(const r of rooms){if(r.kind==='boss'||r.kind==='exit'||r.kind==='start')continue;
@@ -886,7 +1013,7 @@ function makeLargeMap(){
  }
  // Fixed V9.3.1 room dimensions; 33 ordinary (including entry), 10 designated specials, 7 major encounters.
  chooseShapesV931(rooms);
- for(const room of rooms)room.solidDecorV42=true;
+ for(const room of rooms){room.solidDecorV42=true;room.envArchitectureV4=true;}
  return {rooms,edges,arenaIds,exitIds,bossId,outpostIds,geometryVersion:31};
 }
 const SECTORS=[{name:'PÉRIPHÉRIE',bg:'#202f31',grid:'#354846',accent:'#83d9b0',enemy:'mutant',hazard:'Débris et mutants rapides'},{name:'LABORATOIRES',bg:'#152d3c',grid:'#26516a',accent:'#60cef4',enemy:'drone',hazard:'Rayons de sécurité'},{name:'FONDERIE',bg:'#372921',grid:'#65402b',accent:'#ffae62',enemy:'brute',hazard:'Évents thermiques'},{name:'CITADELLE',bg:'#292334',grid:'#50374e',accent:'#e898de',enemy:'sentinel',hazard:'Défenses renforcées'}];
@@ -900,8 +1027,20 @@ function freeChestWeaponLevel(run,room){
 function environment(room){if(!room)return;let sec=sectorOf(room);if(room.envPhase===undefined)room.envPhase=0;if(room.hazardCooldown===undefined)room.hazardCooldown=2.5;if(room.hazardOn===undefined)room.hazardOn=false;if(room.hazardX===undefined)room.hazardX=sec===1?180:sec===2?240:180;}
 // Les ennemis ne peuvent pas apparaitre dans une hitbox solide.
 // La geometrie utilisee ici est celle du moteur de collisions joueur/projectiles.
+// Entry fairness V1: keep hostile spawns away from every connected doorway.
+function ashEntryClearance(room,x,y){
+ const r=data.run;
+ if(!r||!room)return true;
+ const id=r.rooms.indexOf(room);
+ if(id<0)return true;
+ const links=doors(id)||[];
+ return links.every(link=>{
+  const d=roomDoor(room,link);
+  return !d||Math.hypot(x-d.x,y-d.y)>=135;
+ });
+}
 function spawnSafe(room,others=[],preferred=null){
- const allowed=(x,y)=>x>=32&&x<=roomGeom(room).w-32&&y>=32&&y<=roomGeom(room).h-32&&!collidesSolid(x,y,17,room)&&
+ const allowed=(x,y)=>ashEntryClearance(room,x,y)&&x>=32&&x<=roomGeom(room).w-32&&y>=32&&y<=roomGeom(room).h-32&&!collidesSolid(x,y,17,room)&&
    !others.some(e=>Math.hypot(e.x-x,e.y-y)<35)&&
    !(player&&data.run&&data.run.rooms[data.run.current]===room&&Math.hypot(player.x-x,player.y-y)<43);
  if(preferred&&allowed(preferred.x,preferred.y))return preferred;
@@ -928,10 +1067,11 @@ function sanitizeEnemyPositions(room){
  }
  return changed;
 }
-function enemiesFor(id){let r=data.run,room=r?.rooms[id];if(id===0||room?.kind==='outpost')return[];let arena=isArena(id,r),boss=isBoss(id,r),sec=sectorOf(room);let count=boss?4:arena?6:isExit(id,r)?pick(3,4):room?.kind==='guarded'?pick(6,9):pick(4,7);const enemies=[];
+function enemiesFor(id){let r=data.run,room=r?.rooms[id];if(id===0||room?.kind==='outpost')return[];let arena=isArena(id,r),boss=isBoss(id,r),sec=sectorOf(room);let count=boss?4:arena?6:isExit(id,r)?pick(3,4):room?.kind==='guarded'?pick(6,9):pick(4,7);count=ashDifficultyCount(count);const enemies=[];
  for(let k=0;k<count;k++){
   let type=(boss||arena)&&k===count-1?'sentinel':sec===0?(k%4===3?'drone':k%2?'ranged':'chaser'):sec===1?(k%3===0?'ranged':k%3===1?'drone':'chaser'):sec===2?(k%3===0?'brute':k%3===1?'ranged':'drone'):(k%3===0?'sentinel':k%3===1?'drone':'chaser');
   let hp=(type==='sentinel'?(boss?370:180):type==='brute'?195:type==='drone'?94:type==='ranged'?90:115)*(1+sec*.14);
+  hp=Math.max(1,Math.round(hp*ashDifficultyFactor()));
   const pos=spawnSafe(room,enemies);
   if(pos)enemies.push({id:uid(),type,...pos,hp,max:hp,cd:Math.random()+.6,wind:0,aim:0,...(boss&&k===count-1?{guardian:true}:{} )});
  }
@@ -1043,10 +1183,11 @@ function ashDrawBossHud(room){
  cx.restore();
 }
 
-function spawnReinforcement(room,count){for(let k=0;k<count;k++){
+function spawnReinforcement(room,count){count=ashDifficultyCount(count);for(let k=0;k<count;k++){
  const type=room.kind==='arena'?(k%5===0?'brute':k%3===0?'drone':k%2?'chaser':'ranged'):(k%2===0?'ranged':'chaser'),hp=type==='brute'?190:type==='drone'?94:type==='ranged'?90:115;
+ const scaledHp=Math.max(1,Math.round(hp*ashDifficultyFactor()));
  const pos=spawnSafe(room,room.enemies,{x:k%2?292:67,y:85+35*(k%3)});
- if(pos)room.enemies.push({id:uid(),type,...pos,hp,max:hp,cd:1,wind:0,aim:0});
+ if(pos)room.enemies.push({id:uid(),type,...pos,hp:scaledHp,max:scaledHp,cd:1,wind:0,aim:0});
 }}
 
 function createRun(){
@@ -1139,11 +1280,24 @@ function createRun(){
 function setPlayer(){player=data.run?.player||null}
 
 // Progression temporaire : aucun champ de sauvegarde permanent modifié.
-const PERKS=[{id:'rapid',name:'Tir rapide',desc:'+8 %, +6 %, +4 % (max 3)',icon:'rate'},
- {id:'power',name:'Munitions renforcées',desc:'+8 %, +6 %, +4 % (max 3)',icon:'xp'},
- {id:'speed',name:'Semelles tactiques',desc:'+7 % vitesse (max 3)',icon:'speed'},
- {id:'vital',name:'Patch médical',desc:'+15 PV max et soin (max 3)',icon:'health'},
- ];
+// ASHFALL Evolutions V2: 15 temporary perks, 5 categories, 3 ranks.
+const PERKS=[
+ {id:'rapid',name:'Tir rapide',icon:'rate',family:'attack'},
+ {id:'power',name:'Munitions renforcées',icon:'xp',family:'attack'},
+ {id:'pierce',name:'Tir perforant',icon:'xp',family:'attack'},
+ {id:'vital',name:'Patch médical',icon:'health',family:'defense'},
+ {id:'armor',name:'Blindage réactif',icon:'health',family:'defense'},
+ {id:'laststand',name:'Dernier rempart',icon:'health',family:'defense'},
+ {id:'speed',name:'Semelles tactiques',icon:'speed',family:'mobility'},
+ {id:'emergency',name:'Propulseur d’urgence',icon:'speed',family:'mobility'},
+ {id:'dodge',name:'Esquive instinctive',icon:'speed',family:'mobility'},
+ {id:'arc',name:'Surcharge électrique',icon:'rate',family:'tech'},
+ {id:'blast',name:'Munitions instables',icon:'xp',family:'tech'},
+ {id:'mark',name:'Marquage tactique',icon:'xp',family:'tech'},
+ {id:'scanner',name:'Scanner de terrain',icon:'speed',family:'explore'},
+ {id:'magnet',name:'Récupération énergétique',icon:'rate',family:'explore'},
+ {id:'recycle',name:'Recyclage de combat',icon:'xp',family:'explore'}
+];
 function runProgress(){let r=data.run;if(!r)return null;
  if(!Number.isFinite(r.runLevel))r.runLevel=1;
  if(!Number.isFinite(r.xp))r.xp=0;
@@ -1160,16 +1314,21 @@ function collectXp(amount,deferChoice=false){let r=runProgress();if(!r)return;
  let safety=0;while(r.xp>=xpThreshold(r.runLevel)&&safety++<50){r.xp-=xpThreshold(r.runLevel);r.runLevel++;r.pendingLevels++}
  if(r.pendingLevels>0&&!deferChoice&&overlay!=='level')openLevelChoice();
 }
-const PERK_CAPS={rapid:3,power:3,speed:3,vital:3};
-function perkCount(id){let r=runProgress();return Math.min(PERK_CAPS[id]||3,Math.max(0,Number(r?.runPerks[id])||0))}
+const PERK_CAPS=Object.fromEntries(PERKS.map(p=>[p.id,3]));
+function perkCount(id){let r=runProgress();return Math.min(3,Math.max(0,Number(r?.runPerks?.[id])||0))}
 function perkBonus(id){let n=perkCount(id);if(id==='rapid'||id==='power')return [0,.08,.14,.18][n];if(id==='speed')return .07*n;if(id==='cool')return .08*n;return 0}
-function levelOptions(){let r=runProgress();const available=PERKS.filter(p=>perkCount(p.id)<PERK_CAPS[p.id]);
+function levelOptions(){
+ const r=runProgress(),available=PERKS.filter(p=>perkCount(p.id)<3);
  if(!available.length){r.pendingLevels=0;r.levelChoices=null;return []}
- const previous=Array.isArray(r.levelChoices)?r.levelChoices.filter(id=>available.some(p=>p.id===id)):[];
- if(!previous.length||previous.length>3){r.levelChoices=[...available].sort(()=>Math.random()-.5).slice(0,3).map(o=>o.id)}
-  else {const missing=available.filter(p=>!previous.includes(p.id)).sort(()=>Math.random()-.5);r.levelChoices=[...previous,...missing.slice(0,Math.max(0,Math.min(3,available.length)-previous.length)).map(p=>p.id)];}
- return r.levelChoices.map(id=>PERKS.find(p=>p.id===id)).filter(Boolean)}
-const PERK_STYLE={rapid:['OFFENSIF','perk-attack'],power:['DÉGÂTS','perk-damage'],speed:['MOBILITÉ','perk-mobility'],vital:['SURVIE','perk-defense']};
+ if(Array.isArray(r.levelChoices)&&r.levelChoices.length&&r.levelChoices.every(id=>available.some(p=>p.id===id)))return r.levelChoices.map(id=>PERKS.find(p=>p.id===id));
+ const last=Array.isArray(r.lastLevelChoices)?r.lastLevelChoices:[];
+ const weighted=available.map(p=>({p,score:Math.random()+(last.includes(p.id)?-.65:0)+(perkCount(p.id)>0?.18:0)})).sort((a,b)=>b.score-a.score);
+ const choices=[],families=new Set();
+ for(const item of weighted){if(!families.has(item.p.family)){choices.push(item.p);families.add(item.p.family)}if(choices.length===3)break}
+ for(const item of weighted){if(choices.length===3)break;if(!choices.includes(item.p))choices.push(item.p)}
+ r.levelChoices=choices.map(p=>p.id);return choices;
+}
+const PERK_STYLE={rapid:['OFFENSIF','perk-attack'],power:['DÉGÂTS','perk-damage'],pierce:['OFFENSIF','perk-attack'],vital:['SURVIE','perk-defense'],armor:['SURVIE','perk-defense'],laststand:['SURVIE','perk-defense'],speed:['MOBILITÉ','perk-mobility'],emergency:['MOBILITÉ','perk-mobility'],dodge:['MOBILITÉ','perk-mobility'],arc:['TECHNOLOGIE','perk-attack'],blast:['TECHNOLOGIE','perk-damage'],mark:['TECHNOLOGIE','perk-attack'],scanner:['EXPLORATION','perk-mobility'],magnet:['EXPLORATION','perk-mobility'],recycle:['EXPLORATION','perk-defense']};
 // 0.8.9.69 : le code de présentation des bonus ne doit JAMAIS afficher l'identifiant
 // technique d'une icône (rate, xp, speed...) comme une chaîne visible.
 // Ces cinq pictogrammes SVG sont autonomes : ni réseau, ni police emoji, ni sprite externe.
@@ -1177,19 +1336,28 @@ const PERK_ICON_PATHS=Object.freeze({
  rapid:'<path d="M14 2 5.5 13h6L10 22l8.5-11H13L14 2Z"/><path d="M4 5h4M3 9h3"/>',
  power:'<path d="M12 2c-3.2 3.5-5 6.7-5 10.5V21h10v-8.5C17 8.7 15.2 5.5 12 2Z"/><path d="M7 17h10M9 12h6M12 5v3"/>',
  speed:'<path d="M2.5 7h8M1.5 12h7M2.5 17h8"/><path d="m12 4 9 8-9 8v-5H8v-6h4V4Z"/>',
- vital:'<path d="M9 2.5h6v6h6v6h-6v7H9v-7H3v-6h6v-6Z"/><path d="M10.5 12h3"/>'
+ vital:'<path d="M9 2.5h6v6h6v6h-6v7H9v-7H3v-6h6v-6Z"/><path d="M10.5 12h3"/>',
+ pierce:'<circle cx="12" cy="12" r="8"/><path d="M3 12h18M12 3v18M9 12h6"/>',
+ armor:'<path d="M12 2 20 5v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3Z"/><path d="m9 12 2 2 4-4"/>',
+ laststand:'<path d="M12 2 20 6v6c0 4-3 7-8 10-5-3-8-6-8-10V6l8-4Z"/><path d="M12 7v6M12 17h.01"/>',
+ emergency:'<path d="m13 2-8 11h7l-1 9 8-12h-7l1-8Z"/><path d="M3 6h4M2 10h3"/>',
+ dodge:'<path d="M12 2 20 6v6c0 4-3 7-8 10-5-3-8-6-8-10V6l8-4Z"/><path d="m8 13 3 3 5-7"/>',
+ arc:'<path d="m13 2-8 11h7l-1 9 8-12h-7l1-8Z"/><path d="M3 4 1 6M21 18l2 2"/>',
+ blast:'<path d="m12 2 2.5 6 6.5-1-3 5 4 5-7-.5L12 22l-3-5.5L2 17l4-5-3-5 6.5 1L12 2Z"/><circle cx="12" cy="12" r="2"/>',
+ mark:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 1v5M12 18v5M1 12h5M18 12h5"/>',
+ scanner:'<path d="M8 3H4a1 1 0 0 0-1 1v4M16 3h4a1 1 0 0 1 1 1v4M3 16v4a1 1 0 0 0 1 1h4M21 16v4a1 1 0 0 1-1 1h-4"/><path d="M5 13c3-5 11-5 14 0-3 5-11 5-14 0Z"/><circle cx="12" cy="13" r="2"/>',
+ magnet:'<path d="M5 3h5v9a2 2 0 0 0 4 0V3h5v9a7 7 0 0 1-14 0V3Z"/><path d="M5 7h5M14 7h5"/>',
+ recycle:'<path d="m7 4 4-2 3 5M11 2l-2 5M18 9l4 3-4 4M22 12h-5M15 20H8l-2-4M8 20l2-4"/><circle cx="12" cy="12" r="2"/>'
 });
 function perkIcon(id){
  const paths=PERK_ICON_PATHS[id];
- return paths?'<svg class="perk-art" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>':'';
+ return paths?'<svg class="perk-art" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+(paths||PERK_ICON_PATHS.power)+'</svg>':'';
 }
 
-function perkDescription(id,next){
- if(id==='rapid')return '+'+[0,8,14,18][next]+' % cadence totale';
- if(id==='power')return '+'+[0,8,14,18][next]+' % dégâts totaux';
- if(id==='speed')return '+'+(next*7)+' % vitesse totale';
- if(id==='vital')return '+'+(next*15)+' PV max cumulés · soin +15 PV';
- return '';
+function perkDescription(id,n){
+ const d={rapid:['+8 %','+14 %','+18 %'],power:['+8 %','+14 %','+18 %'],speed:['+7 %','+14 %','+21 %'],vital:['+15 PV max · soin +15','+30 PV max · soin +15','+45 PV max · soin +15'],pierce:['15 %','22 %','30 %'],armor:['−6 %','−10 %','−14 %'],laststand:['20 %','30 %','40 %'],emergency:['+20 %','+30 %','+40 %'],dodge:['5 %','8 %','11 %'],arc:['1 arc / 8 tirs','1 arc / 7 tirs','1 arc / 6 tirs'],blast:['10 %','15 %','20 %'],mark:['+3 %','+5 %','+7 %'],scanner:['1 salle','2 salles','3 salles'],magnet:['+18 px','+32 px','+48 px'],recycle:['+2 crédits','+3 crédits','+4 crédits']};
+ const suffix={rapid:' cadence totale',power:' dégâts totaux',speed:' vitesse totale',pierce:' de tirs traversants',armor:' dégâts subis',laststand:' résistance sous 30 % PV',emergency:' vitesse pendant 2 s après impact',dodge:' de chances d’esquive',arc:' électrique',blast:' explosion à l’élimination',mark:' dégâts par tir consécutif (max 3)',scanner:'s adjacente(s) révélée(s)',magnet:' de portée d’aspiration XP',recycle:' toutes les 5 éliminations'};
+ return (d[id]?.[n-1]||'')+(suffix[id]||'');
 }
 function openLevelChoice(){let r=runProgress();if(!r||r.pendingLevels<=0)return;
  overlay='level';let opts=levelOptions();if(!opts.length){overlay='';$('overlay').hidden=true;persist();return}
@@ -1198,8 +1366,23 @@ function openLevelChoice(){let r=runProgress();if(!r||r.pendingLevels<=0)return;
 function choosePerk(id){let r=runProgress();if(!r||r.pendingLevels<=0||!r.levelChoices?.includes(id)||perkCount(id)>=PERK_CAPS[id])return;
  r.runPerks[id]=(r.runPerks[id]||0)+1;
  if(id==='vital'){player.max+=15;player.hp=Math.min(player.max,player.hp+15)}
- r.pendingLevels--;r.levelChoices=null;persist();closeOverlay();msg('Amélioration temporaire obtenue : '+PERKS.find(p=>p.id===id).name);
+ if(id==='scanner')ashRevealPerkRooms(r,perkCount('scanner'));r.lastLevelChoices=[...r.levelChoices];r.pendingLevels--;r.levelChoices=null;persist();closeOverlay();msg('Amélioration temporaire obtenue : '+PERKS.find(p=>p.id===id).name);
  if(r.pendingLevels>0)openLevelChoice();else render();}
+function ashRevealPerkRooms(r,n){
+ // Mark adjacent unexplored rooms as intel, without marking them visited or unlocking doors.
+ const here=r.rooms?.[r.current];if(!here)return;
+ const candidates=(r.rooms||[]).filter(o=>o&&o.id!==here.id&&!r.visited.includes(o.id)&&Math.hypot((o.gx??o.x??0)-(here.gx??here.x??0),(o.gy??o.y??0)-(here.gy??here.y??0))<=2);
+ if(!Array.isArray(r.intelRooms))r.intelRooms=[];
+ for(const room of candidates.slice(0,n)){if(!r.intelRooms.includes(room.id))r.intelRooms.push(room.id)}
+}
+function ashPerkDamageFactor(enemy){let n=perkCount('mark');if(!n)return 1;const r=data.run;if(r._markedEnemy!==enemy.id){r._markedEnemy=enemy.id;r._markHits=0}r._markHits=Math.min(3,(r._markHits||0)+1);return 1+Math.min(3,r._markHits)*[0,.03,.05,.07][n]}
+function ashPerkOnKill(room,enemy){const r=data.run;if(!r)return;
+ const n=perkCount('recycle');if(n&&r.kills%5===0){const extra=[0,2,3,4][n];r.earnedCredits+=extra;r.economy??={};r.economy.enemy=(r.economy.enemy||0)+extra}
+ const blast=perkCount('blast');if(blast&&Math.random()<[0,.10,.15,.20][blast]){
+  for(const other of room.enemies){if(other!==enemy&&other.hp>0&&Math.hypot(other.x-enemy.x,other.y-enemy.y)<50){other.hp-=8+blast*5;if(other.hp<=0&&!other.lootDropped)awardEnemyDefeat(room,other)}}
+  window.dispatchEvent(new CustomEvent('ashfall-fx',{detail:{kind:'impact',x:enemy.x,y:enemy.y}}));
+ }
+}
 function hasLineOfSight(ax,ay,bx,by,room){let dist=Math.hypot(bx-ax,by-ay),steps=Math.ceil(dist/7);for(let i=1;i<steps;i++){let t=i/steps;if(collidesSolid(ax+(bx-ax)*t,ay+(by-ay)*t,4,room))return false}return true}
 
 
@@ -1207,14 +1390,50 @@ function hasLineOfSight(ax,ay,bx,by,room){let dist=Math.hypot(bx-ax,by-ay),steps
 function ground(room){if(!Array.isArray(room.drops))room.drops=[];return room.drops}
 function lootSpawn(room,kind,x,y,item=null,amount=1){
  if(data.run?.eq2&&kind==='weapon'&&item&&!item._eq2Dropped){
-   const alternative=E2.rollDrop(sectorOf(room));
-   if(alternative){if(item.rar==='Épique')alternative.rar='Épique';if(item.rar==='Rare'&&alternative.rar==='Commun')alternative.rar='Rare';item=alternative;}
-   else item={...E2.normalizeWeapon(item),level:sectorOf(room)+1};
+   const source=item._ashFromChest?(room.kind==='arena'?'arena':'chest'):'enemy';
+   const alternative=E2.rollDrop(sectorOf(room),Math.random,source,data.run?.difficulty||1);
+   if(alternative)item=alternative;
+   else item={...E2.normalizeWeapon(item),rar:E2.rollExpeditionRarity(source,data.run?.difficulty||1),level:sectorOf(room)+1};
  }
  const drops=ground(room);let theta=Math.random()*Math.PI*2,rad=10+Math.random()*17;
- let px=clamp(x+Math.cos(theta)*rad,32,328),py=clamp(y+Math.sin(theta)*rad,40,358);
- // Éviter de laisser un objet à l'intérieur d'un décor solide.
- if(collidesSolid(px,py,8,room)){px=clamp(x,32,328);py=clamp(y,40,358)}
+ // Placement relatif au point de mort, dans la géométrie réelle de la salle.
+ // Ne jamais rabattre les drops vers les bornes d'une salle 360x400.
+ const geom=roomGeom(room),margin=9;
+ const valid=(px,py)=>Number.isFinite(px)&&Number.isFinite(py)&&
+   px>=margin&&py>=margin&&px<=geom.w-margin&&py<=geom.h-margin&&
+   !collidesSolid(px,py,margin,room);
+ let px=x+Math.cos(theta)*rad,py=y+Math.sin(theta)*rad;
+ if(!valid(px,py)){
+   // Priorité au point exact de mort, puis recherche locale en cercles.
+   if(valid(x,y)){px=x;py=y;}
+   else {
+     let found=false;
+     for(let r=6;r<=90&&!found;r+=6){
+       for(let i=0;i<24;i++){
+         const a=theta+i*Math.PI/12;
+         const nx=x+Math.cos(a)*r,ny=y+Math.sin(a)*r;
+         if(valid(nx,ny)){px=nx;py=ny;found=true;break;}
+       }
+     }
+     // En dernier recours, rechercher une cellule jouable, sans traverser
+     // les ailes absentes des salles en L.
+     if(!found){
+       let best=Infinity;
+       for(const [tx,ty] of geom.cells){
+         for(let yy=24;yy<CELL_H-24;yy+=24){
+           for(let xx=24;xx<CELL_W-24;xx+=24){
+             const nx=tx*CELL_W+xx,ny=ty*CELL_H+yy;
+             const d=(nx-x)**2+(ny-y)**2;
+             if(d<best&&valid(nx,ny)){best=d;px=nx;py=ny;found=true;}
+           }
+         }
+       }
+     }
+     // Les positions de mort normales sont jouables ; cette sécurité évite
+     // tout retour aux coordonnées fixes historiques en cas de données atypiques.
+     if(!found){px=x;py=y;}
+   }
+ }
  drops.push({id:uid(),kind,item,amount,x:px,y:py,age:0,bounce:.32,got:false});
 }
 let ashLootToastTimer=null;
@@ -1293,7 +1512,7 @@ function lootUpdate(room,dt){
    if(!d.warned){d.warned=true;msg('Sac plein : équipement laissé au sol. Ouvre SAC pour le comparer.');}
    continue;
   }
-  const dist=Math.hypot(player.x-d.x,player.y-d.y);const range=d.kind==='xp'?104:68;
+  const dist=Math.hypot(player.x-d.x,player.y-d.y);const range=d.kind==='xp'?104+[0,18,32,48][perkCount('magnet')]:68;
   if(dist<range&&d.bounce<=0&&hasLineOfSight(d.x,d.y,player.x,player.y,room)){const speed=d.kind==='xp'?340:250;const t=Math.min(1,speed*dt/Math.max(1,dist));let tx=d.x+(player.x-d.x)*t,ty=d.y+(player.y-d.y)*t;if(!collidesSolid(tx,ty,6,room)){d.x=tx;d.y=ty}}
   if(Math.hypot(player.x-d.x,player.y-d.y)<18&&d.bounce<=0){
    if(d.kind==='xp'){collectXp(d.amount);d.got=true}
@@ -1313,33 +1532,74 @@ function lootUpdate(room,dt){
  }
  room.drops=drops.filter(d=>!d.got);
 }
+function afLootGlow(cx,d,now){
+ const xp=d.kind==='xp',credit=d.kind==='credits',rar=String(d.item?.rar||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ const rarity=rar.includes('myth')?5:rar.includes('legend')?4:rar.includes('epiq')?3:rar.includes('rare')?2:rar.includes('inhabituel')||rar.includes('peu commun')?1:0;
+ const palette=['#c7dbe2','#64dfb8','#5abaff','#b477ff','#ffc357','#ff799d'];
+ const color=xp?'#63f4f7':credit?'#ffc869':palette[rarity];
+ const equipment=!xp&&!credit;
+ const rank=xp?2:credit?1:rarity;
+ const pulse=1+(Math.sin(now*(rank>=3?3.2:2.1)+d.x*.05)*.08);
+ const radius=(xp?20:credit?20:32+rank*6.2)*pulse;
+ const alpha=xp?.38:credit?.27:Math.min(.86,.39+rank*.095);
+ cx.save();
+ // Ground light bloom is deliberately below the actual pickup silhouette.
+ const g=cx.createRadialGradient(0,2,3,0,2,radius);
+ g.addColorStop(0,color);g.addColorStop(.25,color);g.addColorStop(1,'rgba(0,0,0,0)');
+ cx.globalAlpha=alpha;cx.fillStyle=g;cx.beginPath();cx.ellipse(0,2,radius,radius*.65,0,0,Math.PI*2);cx.fill();
+ cx.globalAlpha=1;
+ cx.strokeStyle=color;cx.lineWidth=rank>=3?1.6:1;
+ cx.globalAlpha=equipment?.53+(rank>=2?.14*Math.sin(now*3+d.y*.04):0):.3+(rank>=2?.12*Math.sin(now*3+d.y*.04):0);
+ cx.beginPath();cx.ellipse(0,2,radius*.62,radius*.32,0,0,Math.PI*2);cx.stroke();
+ cx.globalAlpha=1;
+ // Only high rarity gets orbiting sparkles, kept subtle for combat readability.
+ if(!xp&&!credit&&rank>=3){
+  for(let i=0;i<(rank>=5?5:rank>=4?4:3);i++){
+   const a=now*(.55+rank*.08)+i*Math.PI*2/(rank>=5?5:rank>=4?4:3)+d.x*.02;
+   const x=Math.cos(a)*radius*.58,y=Math.sin(a)*radius*.32-5;
+   cx.fillStyle=color;cx.globalAlpha=.4+.25*Math.sin(now*3+i);
+   cx.fillRect(x-1,y-1,2,2);
+  }
+ }
+ cx.restore();
+}
 function lootDraw(room){
  const now=performance.now()/1000;
  for(const d of ground(room)){
-  const isXp=d.kind==='xp',isCredit=d.kind==='credits',col=isXp?'#74eced':isCredit?'#ffcb6e':tint(d.item||{});
-  const bob=Math.sin(now*4+d.x*.04)*2-(d.bounce||0)*22;
-  cx.save();cx.globalAlpha=.15;cx.fillStyle=col;cx.beginPath();cx.ellipse(d.x,d.y+5,isXp?10:19,isXp?7:12,0,0,Math.PI*2);cx.fill();cx.restore();
-  if(d.kind==='weapon'&&['Épique','Légendaire','Mythique'].includes(d.item?.rar)){
-    cx.save();cx.globalAlpha=.17+.07*Math.sin(now*4);cx.fillStyle=col;cx.fillRect(d.x-4,Math.max(24,d.y-45),8,43);cx.restore();
-  }
-  cx.fillStyle=col;cx.strokeStyle='#0c1522';cx.lineWidth=2;cx.beginPath();
-  if(isXp){cx.moveTo(d.x,d.y-6+bob);cx.lineTo(d.x+6,d.y+bob);cx.lineTo(d.x,d.y+6+bob);cx.lineTo(d.x-6,d.y+bob)}
-  else if(isCredit){cx.arc(d.x,d.y+bob,6,0,Math.PI*2)}
-   else{
-    // Une arme générique, pas la photo PNG de l'inventaire : silhouette tactique
-    // horizontale très lisible, colorée selon la rareté de l'équipement.
-    cx.closePath();cx.save();cx.translate(d.x,d.y+bob);
-    cx.shadowColor=col;cx.shadowBlur=8;cx.strokeStyle='#081722';cx.lineWidth=1.4;
-    cx.beginPath();cx.roundRect(-17,-8,34,19,5);cx.fillStyle='#0d2331';cx.fill();cx.stroke();
-    cx.shadowBlur=0;cx.fillStyle=col;cx.strokeStyle=col;cx.lineJoin='round';
-    cx.fillRect(-6,-4,15,7);  // corps
-    cx.fillRect(8,-2,9,3);   // canon
-    cx.beginPath();cx.moveTo(-7,-2);cx.lineTo(-15,-5);cx.lineTo(-15,2);cx.lineTo(-7,2);cx.closePath();cx.fill(); // crosse
-    cx.beginPath();cx.moveTo(0,3);cx.lineTo(6,3);cx.lineTo(4,9);cx.lineTo(1,9);cx.closePath();cx.fill(); // poignée
-    cx.fillRect(-2,-7,6,2); // organe de visée
-    cx.restore();continue;
+  const xp=d.kind==='xp',credit=d.kind==='credits',col=xp?'#74eced':credit?'#ffcb6e':tint(d.item||{});
+  const bob=Math.sin(now*4+d.x*.04)*1.5-(d.bounce||0)*22;
+  cx.save();cx.translate(d.x,d.y+bob);
+  afLootGlow(cx,d,now);
+  cx.fillStyle='rgba(0,7,11,.42)';cx.beginPath();cx.ellipse(0,7,xp?9:18,xp?4:7,0,0,Math.PI*2);cx.fill();
+  if(d.kind==='weapon'){
+   // Raised metal equipment capsule, identifiable as a physical pickup.
+   cx.fillStyle='#09151d';cx.beginPath();cx.roundRect(-18,-10,36,19,4);cx.fill();
+   cx.fillStyle='#29434e';cx.fillRect(-15,-8,30,13);
+   cx.fillStyle='#627a84';cx.fillRect(-15,-8,30,2);
+   cx.fillStyle=col;cx.fillRect(-15,3,30,2);
+   cx.save();cx.shadowColor=col;cx.shadowBlur=8;cx.strokeStyle=col;cx.globalAlpha=.85;cx.lineWidth=1.3;cx.strokeRect(-16,-9,32,15);cx.restore();
+   cx.fillStyle='#0a1119';cx.fillRect(-11,-3,22,5);
+   cx.fillStyle='#b4c3c8';cx.fillRect(-7,-3,15,2);
+   cx.fillStyle='#607781';cx.fillRect(6,-2,9,2);
+   cx.fillStyle='#a5b5bc';cx.fillRect(-13,-2,5,3);
+   cx.fillStyle='#a5b5bc';cx.fillRect(-2,1,3,5);
+   cx.fillStyle=col;cx.fillRect(13,-6,2,4);
+   if(['Épique','Légendaire','Mythique'].includes(d.item?.rar)){
+    cx.globalAlpha=.12+.06*Math.sin(now*4);cx.fillStyle=col;cx.fillRect(-4,-33,8,24);cx.globalAlpha=1;
    }
-   cx.closePath();cx.fill();cx.stroke();
+  }else if(credit){
+   cx.fillStyle='#554025';cx.beginPath();cx.ellipse(0,2,8,6,0,0,Math.PI*2);cx.fill();
+   cx.save();cx.shadowColor='#ffc869';cx.shadowBlur=8;
+   cx.fillStyle='#e9b75e';cx.beginPath();cx.ellipse(0,-1,8,6,0,0,Math.PI*2);cx.fill();cx.restore();
+   cx.strokeStyle='#fff0b4';cx.lineWidth=1;cx.beginPath();cx.ellipse(0,-1,5,3.5,0,0,Math.PI*2);cx.stroke();
+   cx.fillStyle='#775027';cx.fillRect(-1,-4,2,6);
+  }else{
+   cx.fillStyle='#173e4c';cx.beginPath();cx.moveTo(0,-10);cx.lineTo(8,-2);cx.lineTo(0,6);cx.lineTo(-8,-2);cx.closePath();cx.fill();
+   cx.save();cx.shadowColor='#67ffff';cx.shadowBlur=9;
+   cx.strokeStyle='#8ef5f5';cx.lineWidth=1.5;cx.stroke();cx.restore();
+   cx.fillStyle='#b5ffff';cx.beginPath();cx.moveTo(0,-7);cx.lineTo(4,-2);cx.lineTo(0,3);cx.lineTo(-4,-2);cx.closePath();cx.fill();
+  }
+  cx.restore();
  }
 }
 
@@ -1788,7 +2048,11 @@ if(from!==null){
   }
   roomCamera.id=-1;
 }
-sanitizeEnemyPositions(room);if(r.interactiveV72&&ASH_DISCOVERY_ROLES.has(room.fieldRole)&&room.fieldEvent?.state==='ready')msg(FIELD_NAMES[room.fieldRole]+' : sécurise la salle, puis approche-toi du terminal.');if(isArena(id,r)&&!room.cleared){enforceArena()}
+// Entry grace applies to attacks and area hazards, not movement or targeting.
+ room._entryGrace=from!==null&&!room.cleared?1.2:0;
+ // On re-entry, never retain an almost-completed windup from the previous visit.
+ if(room._entryGrace>0)for(const e of room.enemies||[]){e.wind=0;e.cd=Math.max(e.cd,1.2);if(e.guardianAI){e.guardianAI.attack=null;e.guardianAI.wind=0;}}
+ sanitizeEnemyPositions(room);if(r.interactiveV72&&ASH_DISCOVERY_ROLES.has(room.fieldRole)&&room.fieldEvent?.state==='ready')msg(FIELD_NAMES[room.fieldRole]+' : sécurise la salle, puis approche-toi du terminal.');if(isArena(id,r)&&!room.cleared){enforceArena()}
 else if(autoSecure(room)){persist()}
 if(isBoss(id,r)&&!room.cleared){room.activated=true;msg('⚠ BOSS K-17 : portes scellées !')}
 player.inv=.65;bullets=[];closeOverlay();persist();render();if(room.hazardNeutralizedByTerminal){room.hazardNeutralizedByTerminal=false;msg('⚡ Blindage de zone actif : danger environnemental neutralisé.')}else if(!isArena(id,r)&&!isBoss(id,r))msg(isExit(id,r)?'Terminal d’extraction détecté.':`K-17 · salle ${id+1}/${r.rooms.length} · secteur ${room.sector+1}`)}
@@ -1813,7 +2077,7 @@ function ashChestIcon(tier){
  return `<img class="ash-chest-art" src="${ASH_CHEST_IMAGE_DATA[tier.id].closed}" alt="Coffre ${tier.name}" loading="eager" decoding="async">`;
 }
 
-const ASHFALL_RUNTIME_VERSION='0.9.8.1-correctif-minicarte';
+const ASHFALL_RUNTIME_VERSION='0.9.8.2-laboratoire-utile';
 window.__ASHFALL_RUNTIME_VERSION=ASHFALL_RUNTIME_VERSION;
 (function checkAssetVersion(){
  const el=document.getElementById('ashVersion');
@@ -1848,6 +2112,11 @@ function ashChestAnimateProgress(){
 function ashChestClearReveal(){ashChestStopTimer();const root=$('ashChestReveal');if(root){root.hidden=true;root.innerHTML='';}}
 function ashChestRender(){
  const host=$('ashChestOffers');if(!host)return;
+ const rewards=ashChestActiveTab==='recompenses'&&!data.chestPending;
+ const offersPanel=$('ashChestOffers'),rewardPanel=$('ashLevelRewards'),conditions=document.querySelector('.ash-chest-conditions');
+ if(offersPanel)offersPanel.hidden=rewards;if(rewardPanel)rewardPanel.hidden=!rewards;if(conditions)conditions.hidden=rewards;
+ document.querySelectorAll('[data-chest-subtab]').forEach(b=>{b.classList.toggle('active',b.dataset.chestSubtab===(rewards?'recompenses':'coffres'));b.setAttribute('aria-selected',String(b.classList.contains('active')));});
+ if(rewards)ashRenderLevelRewards();
  const bal=$('ashChestCredits');if(bal)bal.textContent=data.credits;
  host.innerHTML=ASH_CHEST_TIERS.map(t=>`<article class="ash-chest-offer ash-chest-${t.id}" style="--chest-accent:${t.accent}">
  <div class="ash-chest-illustration">${ashChestIcon(t)}</div><div class="ash-chest-info"><h3>COFFRE ${t.name}</h3><div class="ash-chest-price">${t.price} CRÉDITS</div></div>
@@ -1906,12 +2175,24 @@ function ashChestCollect(){
  if(!persist(false)){msg('Sauvegarde indisponible : vérifie la progression avant de continuer.');return;}
  ashChestClearReveal();ashChestRender();render();
 }
+function ashOpenPrep(){
+ if(data.pendingDebrief||data.run){start();return;}
+ const modal=$('ashPrepOverlay');if(!modal)return;
+ ashRenderContractSelection();modal.hidden=false;
+ document.body.classList.add('ash-prep-open');
+ $('ashPrepCancel')?.focus();
+}
+function ashClosePrep(){const modal=$('ashPrepOverlay');if(modal)modal.hidden=true;document.body.classList.remove('ash-prep-open');}
+function ashOpenDifficulty(){const el=$('ashDifficultyOverlay');if(!el)return;el.hidden=false;document.body.classList.add('ash-prep-open');$('ashDifficultyLaunch')?.focus();}
+function ashCloseDifficulty(){const el=$('ashDifficultyOverlay');if(el)el.hidden=true;document.body.classList.remove('ash-prep-open');}
+function ashDifficultyFactor(){return data.run?.difficulty===1 ? 0.5 : 1;}
+function ashDifficultyCount(n){return ashDifficultyFactor()===.5?Math.max(1,Math.ceil(n*.5)):n;}
 function start(){if(data.pendingDebrief){showRunDebrief();return}if(data.run){setPlayer();runProgress();if(data.run.pendingLevels>0)openLevelChoice();render();return}
  // Toute nouvelle expédition commence à l'entrée : aucun départ par checkpoint.
  if(!data.eq2&&!e2MigrateWhenSafe()){msg('Migration nécessaire avant de démarrer une nouvelle expédition : '+e2MigrationError);return;}
  if(data.eq2&&!E2.validate(data)){msg('Sauvegarde Équipements 2.0 incohérente : départ bloqué pour préserver les données.');return;}
- data.run=createRun();data.run.labLevels={...(data.labK17?.levels||{})};if(data.eq2){E2.start(data,data.run);const gear=E2.profile(data.run);data.run.player.max=maxHp()+Math.round(gear.maxHp);data.run.player.hp=data.run.player.max;}
- const mapExtra=Math.floor(labLevel('exp01')/2);if(mapExtra&&data.run){const ids=[];for(const edge of (data.run.edges||[])){const to=edge[0]===0?edge[1]:edge[1]===0?edge[0]:null;if(to!=null&&!ids.includes(to)&&to!==0)ids.push(to);}data.run.intelRooms=[...new Set([...(data.run.intelRooms||[]),...ids.slice(0,mapExtra)])];}
+ data.run=createRun();data.run.difficulty=1;data.run.labLevels={...(data.labK17?.levels||{})};if(data.eq2){E2.start(data,data.run);const gear=E2.profile(data.run);data.run.player.max=maxHp()+Math.round(gear.maxHp);data.run.player.hp=data.run.player.max;}
+ // Cartographie 0.9.8.2 : reconnaissance dynamique, calculee depuis la salle courante; aucune salle artificiellement revelee au depart.
  data.equipped=null;data.insured=null;setPlayer();
  enter(0,null);msg('Expédition lancée. Explore et trouve une extraction.');}
 function activateOutpost(){let r=data.run,room=r.rooms[r.current];if(room.kind!=='outpost'||Math.hypot(player.x-180,player.y-195)>=72)return false;
@@ -1968,6 +2249,7 @@ function finish(won,cause='combat'){
   msg(insured?'Expédition échouée : l’objet assuré a été récupéré.':'Expédition échouée : équipement perdu.');
  }
  summary.research=data.research-previousResearch;
+ ashSurvivorAward(summary);
  data.runs++;data.insured=null;data.run=null;data.pendingDebrief=summary;
  ashRegisterCareer(summary);
  ashLongRecord(r,summary);
@@ -1994,6 +2276,7 @@ function showRunDebrief(){
    <div><small>RECHERCHE CONSERVÉE</small><strong>+${Math.max(0,s.research||0)}</strong></div>
    <div><small>XP GAGNÉE EN RUN</small><strong>${Math.max(0,s.xp||0)}</strong></div>
    <div><small>SALLES EXPLORÉES</small><strong>${Math.max(0,s.rooms||0)} / 50</strong></div></div>
+  <div class="ash-sp-debrief">XP SURVIVANT <strong>+${Math.max(0,s.survivorXp||0)}</strong> · NIVEAU ${Math.max(1,s.survivorLevel||1)}${s.survivorLevelsGained?.length?` · ${s.survivorLevelsGained.length} niveau(x) gagné(s)`:``}</div>
   <div class="ash-end-secondary"><span class="ash-end-stat"><span class="ash-end-stat-icon ash-end-stat-elims" aria-hidden="true"></span><b>${s.kills===null?'—':s.kills}</b><small>éliminations</small></span><span class="ash-end-stat"><span class="ash-end-stat-icon ash-end-stat-time" aria-hidden="true"></span><b>${formatRunDuration(s.elapsed)}</b><small>durée</small></span></div>
   ${(Array.isArray(s.contracts)?s.contracts:(s.contract?[s.contract]:[])).map(c=>`<section class="ash-end-contract"><div class="ash-end-contract-title">CONTRAT · ${uiSafe(c.name)}</div><div class="ash-end-contract-result ${c.completed?'complete':''}"><span>${c.completed?'OBJECTIF ACCOMPLI':ok?'OBJECTIF NON ATTEINT':'ÉCHEC D’EXTRACTION'} · ${Math.min(c.actual,c.target)}/${c.target}</span><strong>${c.completed?`+${c.credits} crédits · +${c.research} recherche`:'Aucune prime'}</strong></div></section>`).join('')}
    <section class="ash-end-loot"><h3>${ok?'BUTIN CONSERVÉ':'ÉQUIPEMENT PERDU'}</h3>${raritySummary(ok?s.retained:s.lost)}<div class="ash-end-items">${formatWeapons(ok?s.retained:s.lost)}</div></section>
@@ -2276,6 +2559,12 @@ function merchantCards(){
  if(merchantTab==='buy')return merchantRebornStock().stock.map((w,i)=>({...w,_ref:i,_sell:false}));
  return merchantAllSellable().map(w=>({...w,_ref:w.id,_sell:true}));
 }
+
+function ashCompactFilterButton(slot,attr,active){
+ const symbols={all:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',weapon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9h11l2-2h5v3h2v4h-7l-2 7H9l1-7H2V9ZM15 7V5h4v2M5 11h7"/></svg>',armor:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 6v6c0 5 3 8 8 10 5-2 8-5 8-10V6l-8-4Z"/><path d="M9 10h6m-3-3v9"/></svg>',boots:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7v9l3 3h3a2 2 0 0 1 2 2v3H3v-5l4-3V3Z"/><path d="M7 8h7M3 17h19"/></svg>',bag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="7" width="16" height="15" rx="3"/><path d="M9 7V5a3 3 0 0 1 6 0v2M4 13h16M10 13v3h4v-3"/></svg>',module:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4m6-4v4M9 18v4m6-4v4M2 9h4m-4 6h4m12-6h4m-4 6h4"/></svg>',artifact:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 8 8-8 12L4 10l8-8Z"/><path d="M4 10h16M12 2v20"/></svg>'};
+ const labels={all:'Tout',weapon:'Armes',armor:'Armures',boots:'Bottes',bag:'Sacs',module:'Modules',artifact:'Artéfacts'};
+ return `<button type="button" class="ash-filter-icon${active===slot?' active on':''}" ${attr}="${slot}" aria-label="${labels[slot]}" title="${labels[slot]}" aria-pressed="${active===slot}"><span aria-hidden="true">${symbols[slot]}</span></button>`;
+}
 function merchantRender(){
  const host=$('merchantPageContent');if(!host)return;
  let items=merchantCards().filter(w=>merchantCategory==='all'||(w.slot||'weapon')===merchantCategory);
@@ -2286,7 +2575,7 @@ function merchantRender(){
  const refreshUi=refresh?`<div class="mr-refresh"><div class="mr-refresh-info"><strong>↻ Actualiser le stock</strong><small>${refresh.used}/5 actualisations utilisées · prochain renouvellement naturel après 2 expéditions ou progression</small></div><button type="button" data-mr-refresh ${refresh.price===null||data.credits<refresh.price?'disabled':''}>${refresh.price===null?'ÉPUISÉ':`↻ ${refresh.price} CR`}</button></div>`:'';
 
  const iconCard=w=>`<button type="button" class="mr-item ${selected&&String(selected._ref)===String(w._ref)?'mr-selected':''} ${w.sold?'mr-sold':''}" data-mr-view="${uiSafe(String(w._ref))}" aria-label="Voir ${uiSafe(w.name)}" style="--mr-rarity:${tint(w)}"><span class="mr-art">${e2ItemArt(w)}</span><span class="mr-name">${uiSafe(w.name)}</span><span class="mr-cost">${w.sold?'ÉPUISÉ':(w._sell?'+':'')+Number(w._sell?merchantEquipSale(w):w.price)+' CR'}</span></button>`;
- let html=`<div class="mr-shell"><div class="mr-top"><strong>MARCHAND</strong><span class="mr-money">${afIcon('credits')} ${data.credits} CR</span></div><div class="mr-tabs">${tab('buy','ACHETER')}${tab('sell','VENDRE')}</div><div class="mr-categories" aria-label="Types d’équipement">${MERCHANT_SLOTS.map(slot=>`<button type="button" data-mr-category="${slot}" class="${merchantCategory===slot?'on':''}">${slot==='all'?'Tout':e2SlotName(slot)}</button>`).join('')}</div><div class="mr-subtitle">${available} objet${available!==1?'s':''} ${merchantTab==='buy'?'disponibles':'à vendre'}</div>${refreshUi}<div class="mr-grid">${items.map(iconCard).join('')||'<p class="mr-empty">Aucun objet dans cette catégorie.</p>'}</div>`;
+ let html=`<div class="mr-shell"><div class="mr-top"><strong>MARCHAND</strong><span class="mr-money">${afIcon('credits')} ${data.credits} CR</span></div><div class="mr-tabs">${tab('buy','ACHETER')}${tab('sell','VENDRE')}</div><div class="mr-categories" aria-label="Types d’équipement">${MERCHANT_SLOTS.map(slot=>ashCompactFilterButton(slot,'data-mr-category',merchantCategory)).join('')}</div><div class="mr-subtitle">${available} objet${available!==1?'s':''} ${merchantTab==='buy'?'disponibles':'à vendre'}</div>${refreshUi}<div class="mr-grid">${items.map(iconCard).join('')||'<p class="mr-empty">Aucun objet dans cette catégorie.</p>'}</div>`;
  if(selected){
   const buy=merchantTab==='buy',value=buy?selected.price:merchantEquipSale(selected),locked=buy&&(selected.sold||data.credits<value);
   html+=`<section class="mr-detail" aria-label="Détail de l’objet"><button type="button" class="mr-close" data-mr-close aria-label="Fermer">✕</button><div class="mr-detail-head"><div class="mr-detail-icon">${e2ItemArt(selected)}</div><div><small>${e2SlotName(selected.slot||'weapon')} · ${uiSafe(selected.rar)}</small><h3>${uiSafe(selected.name)}</h3><strong>${buy?'−':'+'}${value} CR</strong></div></div><p>${uiSafe(e2ItemStats(selected)||'Équipement tactique')}</p><button type="button" class="mr-confirm" data-mr-confirm ${locked?'disabled':''}>${buy?(selected.sold?'INDISPONIBLE':data.credits<value?'CRÉDITS INSUFFISANTS':'ACHETER CET OBJET'):'VENDRE CET OBJET'}</button></section>`;
@@ -2321,7 +2610,7 @@ function merchantTransaction(){
 }
 let selectedInventoryId=null;
 let inventoryPage=0;
-let inventorySortMode="default";
+let inventorySortMode="rarity";
 let inventoryRarity="all";
 let inventoryQuery="";
 const INVENTORY_PAGE_SIZE=20;
@@ -2336,7 +2625,51 @@ function renderInventorySelection(){
  <div class="ash-loot-resale">Valeur de revente : <strong>${salvagePrice(w)} crédits</strong></div>
  <div class="inventory-selected-actions"><button type="button" data-grid-equip="${i}">ÉQUIPER</button><button type="button" data-grid-sell="${i}" class="ui-secondary">VENDRE · ${salvagePrice(w)} CRÉDITS</button></div>`;
 }
+
+/* ASHFALL Progression V3 — Fondation 1: lecture seule, aucune modification du combat. */
+const ASH_POWER_SYNERGIES=Object.freeze([
+ {id:'rempart',name:'Rempart',models:['armor-bastion-x','boots-ancrage']},
+ {id:'surcharge',name:'Surcharge',models:['module-amplificateur','artifact-oeil-vide']},
+ {id:'renaissance',name:'Renaissance',models:['module-regenerateur','artifact-coeur-cendre']},
+ {id:'frenesie',name:'Frénésie',models:['armor-reactor','artifact-noyau-instable']},
+ {id:'assaut',name:'Assaut mobile',models:['module-cadence','boots-impulsion']},
+ {id:'gardien',name:'Gardien',models:['armor-sentinelle','module-stabilisateur']}
+]);
+function ashPowerReport(){
+ const weapon=data.equipped||{};
+ const equipped=data.eq2&&E2?['armor','boots','module','bag','artifact'].map(slot=>E2.current(data,slot)).filter(Boolean):[];
+ const models=new Set(equipped.map(w=>w.model));
+ const synergies=ASH_POWER_SYNERGIES.map(s=>({...s,active:s.models.every(m=>models.has(m))}));
+ // Reconstitue un profil de combat sans lancer d'expédition ni muter la sauvegarde.
+ const virtual={eq2:{slots:data.eq2?.slots||{},startingOwned:equipped,loot:[]},labLevels:data.labK17?.levels||{}};
+ const gear=data.eq2&&E2?E2.profile(virtual):{maxHp:0,rate:0,damage:0,resist:0,speed:0,regen:0,shield:0,medic:0,tesla:0,healing:0,killDamage:0,frenzy:0,killSpeed:0};
+ const lv=id=>Math.max(0,Math.min(8,Number(data.labK17?.levels?.[id])||0));
+ const dmg=Math.max(0,Number(weapon.dmg)||0)*(1+.06*Math.max(0,Number(weapon.upgrade)||0)+(weapon.optimized==='dmg'?.05:0));
+ const rate=Math.max(0,Number(weapon.rate)||0)*(1+(weapon.optimized==='rate'?.05:0));
+ const dps=dmg*rate*(1+lv('arm01')*.02)*(1+Math.min(.55,gear.damage||0))*(1+Math.min(.22,gear.rate||0));
+ const hp=100+lv('bio01')*8+(gear.maxHp||0);
+ const offense=Math.round(450*Math.sqrt(Math.max(0,dps)/44));
+ const survival=Math.round(350*Math.sqrt(Math.max(0,hp)/100)*Math.min(1.45,1/Math.max(.65,1-(gear.resist||0)))*(1+Math.min(.18,(gear.regen||0)*.04+(gear.shield||0)*.004+(gear.medic||0)*.004)));
+ const mobility=Math.round(150*(1+Math.min(.45,(gear.speed||0)+lv('mob01')*.015)+Math.min(.08,(gear.killSpeed||0)*.2)));
+ const utility=Math.round(50*(1+Math.min(.45,(gear.tesla||0)*.012+(gear.healing||0)*.3+(gear.frenzy||0)*.3)));
+ return {total:Math.max(0,offense+survival+mobility+utility),offense,survival,mobility,utility,synergies};
+}
+function ashRenderPower(){
+ const host=document.getElementById('ashPowerV3');if(!host||data.run)return;
+ const wasOpen=!!host.querySelector('details[open]');
+ const p=ashPowerReport();
+ const active=p.synergies.filter(s=>s.active);
+ host.innerHTML='<div class="ash-power-head"><span>PUISSANCE TOTALE</span><strong>'+p.total.toLocaleString('fr-BE')+'</strong></div>'+
+ '<div class="ash-power-grid"><span>⚔ <em>Att.</em> <b>'+p.offense+'</b></span><span>♥ <em>Survie</em> <b>'+p.survival+'</b></span><span>➤ <em>Mobil.</em> <b>'+p.mobility+'</b></span><span>◈ <em>Util.</em> <b>'+p.utility+'</b></span></div>'+
+ '<div class="ash-power-active"><span>Compatibilités actives</span><b>'+active.length+' / '+p.synergies.length+'</b></div>'+
+ (active.length?'<div class="ash-power-active-list">'+active.map(s=>'<span>◆ '+s.name+'</span>').join('')+'</div>':'')+
+ '<details class="ash-power-details"'+(wasOpen?' open':'')+'><summary>Détails de puissance et synergies</summary>'+
+ '<div class="ash-power-synergy"><b>COMPATIBILITÉS D’ÉQUIPEMENT</b>'+p.synergies.map(s=>'<div class="'+(s.active?'active':'')+'">'+(s.active?'◆':'◇')+' '+s.name+' <small>'+(s.active?'Association détectée — bonus non activé':'Non assemblée')+'</small></div>').join('')+'</div>'+
+ '<p class="ash-power-note">Score expérimental · ne déverrouille encore aucun contenu. Synergies détectées sans bonus de combat.</p></details>';
+}
+
 function renderRefugeCharacter(){
+ ashRenderPower();
  const stats=data.stats||{};
  ashGearRender();
  if($('activeWeaponArt'))$('activeWeaponArt').innerHTML=weaponArt(data.equipped);
@@ -2353,6 +2686,7 @@ function renderRefugeCharacter(){
  // Accueil : résumé dynamique de l'équipement, lecture seule.
  if($('homeWeaponArt'))$('homeWeaponArt').innerHTML=weaponArt(data.equipped);
  if($('homeWeaponName'))$('homeWeaponName').textContent=data.equipped?.name||'Aucune arme';
+ ashHomeInit();ashHomeUpdate();
  if($('homeWeaponMeta'))$('homeWeaponMeta').textContent=data.equipped?`${data.equipped.rar} · ${data.equipped.dmg+data.dmgLv*3} DGT · ${data.equipped.rate} tirs/s`:'Équipement à préparer';
  if($('homeInsuranceState'))$('homeInsuranceState').textContent=data.eq2?'Équipement acquis':data.equipped&&data.insured===data.equipped.id?'◆ Arme assurée':'Sans assurance';
  if($('homeStashState'))$('homeStashState').textContent=`Réserve : ${data.stash.length}`;
@@ -2368,7 +2702,7 @@ function renderRefugeCharacter(){
  if($('loadoutInsuranceState'))$('loadoutInsuranceState').textContent=data.insured===data.equipped?.id?'Active':'Inactive';
  if($('loadoutInsuranceHint'))$('loadoutInsuranceHint').textContent=data.insured===data.equipped?.id?'Objet protégé pour la prochaine sortie':`Prime : ${premium()} ¤`;
  if($('loadoutHpLevel'))$('loadoutHpLevel').textContent=`Niveau ${labLevel('bio01')}`;
- if($('loadoutHpBonus'))$('loadoutHpBonus').textContent=`+${labLevel('bio01')*6} PV permanents`;
+ if($('loadoutHpBonus'))$('loadoutHpBonus').textContent=`+${labLevel('bio01')*8} PV permanents`;
  if($('loadoutDmgLevel'))$('loadoutDmgLevel').textContent=`Niveau ${labLevel('arm01')}`;
  if($('loadoutDmgBonus'))$('loadoutDmgBonus').textContent=`+${labLevel('arm01')} % dégâts permanents`;
  if($('inventoryEquippedLabel'))$('inventoryEquippedLabel').textContent=data.equipped?`${data.equipped.name} · ${data.equipped.rar}`:'Aucune arme';
@@ -2430,12 +2764,12 @@ function merchantSell(i){const w=data.stash[i];if(!w)return;merchantTab='sell';m
 // LAB K-17 V1 — seules les 6 technologies fondamentales sont accessibles.
 const LAB_COSTS=[6,10,15,23,34,50,74,110];
 const LAB_BRANCHES=[
- {id:'bio',name:'BIOTECHNOLOGIE',icon:'♥',desc:'Résistance et survie',tech:[['bio01','Vitalité renforcée','+6 PV maximum par niveau','+6 PV / niveau'],['bio02','Blindage sous-cutané','Réduction des dégâts reçus','Verrouillé'],['bio03','Protocole de survie','Soin automatique d’urgence','Verrouillé']]},
- {id:'arm',name:'ARMEMENT',icon:'⌖',desc:'Puissance et précision',tech:[['arm01','Puissance balistique','+1 % de dégâts par niveau','+1 % / niveau'],['arm02','Cadence optimisée','Amélioration de la cadence de tir','Verrouillé'],['arm03','Précision tactique','Réduction de la dispersion','Verrouillé']]},
- {id:'mob',name:'MOBILITÉ',icon:'➤',desc:'Déplacement et adaptation',tech:[['mob01','Servomoteurs légers','+1 % de vitesse par niveau','+1 % / niveau'],['mob02','Stabilisation motrice','Réduction des ralentissements','Verrouillé'],['mob03','Protection environnementale','Protection contre les pièges','Verrouillé']]},
- {id:'log',name:'LOGISTIQUE',icon:'▣',desc:'Transport et extraction',tech:[['log01','Compartiments modulaires','+1 place de butin tous les 2 niveaux','+1 place / 2 niveaux'],['log02','Collecteur magnétique','Portée de récupération accrue','Verrouillé'],['log03','Extraction accélérée','Réduction du temps d’extraction','Verrouillé']]},
- {id:'exp',name:'EXPLORATION',icon:'◈',desc:'Reconnaissance et détection',tech:[['exp01','Cartographie avancée','Révèle 1 salle supplémentaire tous les 2 niveaux','+1 salle / 2 niveaux'],['exp02','Scanner de ressources','Détection améliorée des coffres','Verrouillé'],['exp03','Analyse des menaces','Anticipation des dangers','Verrouillé']]},
- {id:'ing',name:'INGÉNIERIE',icon:'⚙',desc:'Modules et technologies',tech:[['ing01','Optimisation des modules','+1,5 % sur les effets numériques des modules par niveau','+1,5 % / niveau'],['ing02','Résonance des artefacts','Amplification des artefacts','Verrouillé'],['ing03','Récupération technologique','Récupération de ressources améliorée','Verrouillé']]}
+ {id:'bio',name:'BIOTECHNOLOGIE',icon:'♥',desc:'Résistance et survie',tech:[['bio01','Vitalité renforcée','+8 PV maximum par niveau','+8 PV / niveau'],['bio02','Blindage sous-cutané','Réduction des dégâts reçus','Verrouillé'],['bio03','Protocole de survie','Soin automatique d’urgence','Verrouillé']]},
+ {id:'arm',name:'ARMEMENT',icon:'⌖',desc:'Puissance et précision',tech:[['arm01','Puissance balistique','+2 % de dégâts par niveau','+2 % / niveau'],['arm02','Cadence optimisée','Amélioration de la cadence de tir','Verrouillé'],['arm03','Précision tactique','Réduction de la dispersion','Verrouillé']]},
+ {id:'mob',name:'MOBILITÉ',icon:'➤',desc:'Déplacement et adaptation',tech:[['mob01','Servomoteurs légers','+1,5 % de vitesse par niveau','+1,5 % / niveau'],['mob02','Stabilisation motrice','Réduction des ralentissements','Verrouillé'],['mob03','Protection environnementale','Protection contre les pièges','Verrouillé']]},
+ {id:'log',name:'LOGISTIQUE',icon:'▣',desc:'Transport et extraction',tech:[['log01','Compartiments modulaires','+1 place de butin par niveau','+1 place / niveau'],['log02','Collecteur magnétique','Portée de récupération accrue','Verrouillé'],['log03','Extraction accélérée','Réduction du temps d’extraction','Verrouillé']]},
+ {id:'exp',name:'EXPLORATION',icon:'◈',desc:'Reconnaissance et détection',tech:[['exp01','Cartographie avancée','Repère 2 à 10 salles inconnues autour du trajet ; indices arènes/boss aux niveaux 4/7','Reconnaissance progressive'],['exp02','Scanner de ressources','Détection améliorée des coffres','Verrouillé'],['exp03','Analyse des menaces','Anticipation des dangers','Verrouillé']]},
+ {id:'ing',name:'INGÉNIERIE',icon:'⚙',desc:'Modules et technologies',tech:[['ing01','Optimisation des modules','+4 % sur les effets des modules par niveau','+4 % / niveau'],['ing02','Résonance des artefacts','Amplification des artefacts','Verrouillé'],['ing03','Récupération technologique','Récupération de ressources améliorée','Verrouillé']]}
 ];
 const LAB_IDS=LAB_BRANCHES.flatMap(b=>b.tech.map(t=>t[0]));
 const labLevel=id=>Math.max(0,Math.min(8,Number(data.labK17?.levels?.[id])||0));
@@ -2473,7 +2807,7 @@ function labRender(){
  <div class="lab-heading"><b>STATIONS DE RECHERCHE</b><small>6 branches · 18 technologies</small></div>
  <div class="lab-stations">${LAB_BRANCHES.map(b=>`<button type="button" class="lab-station ${b.id===labSelected?'selected':''}" data-lab-branch="${b.id}" aria-pressed="${b.id===labSelected}"><span class="lab-station-icon">${b.icon}</span><strong>${b.name}</strong><small>${b.tech.reduce((n,t)=>n+labLevel(t[0]),0)} / 24 NIVEAUX</small></button>`).join('')}</div>
  <section class="lab-branch"><div class="lab-branch-head"><div><span class="lab-eyebrow">STATION // ${branch.name}</span><h3>${branch.desc}</h3></div><span class="lab-branch-progress">${branch.tech.reduce((n,t)=>n+labLevel(t[0]),0)}/24</span></div>
- ${branch.tech.map((t,i)=>{const id=t[0],lv=labLevel(id),locked=i!==0,cost=LAB_COSTS[lv],affordable=data.research>=cost;return `<article class="lab-tech ${locked?'lab-locked':''}"><div class="lab-tech-top"><span class="lab-tech-icon">${locked?'🔒':branch.icon}</span><div><strong>${esc(t[1])}</strong><small>${locked?'EN ATTENTE DE MISE À JOUR':'RECHERCHE ACTIVE'}</small></div><span class="lab-tech-level">${locked?'🔒':`NV. ${lv}/8`}</span></div><p>${esc(t[2])}</p>${locked?'<div class="lab-lock-info">🔒 Déblocage par Puissance totale — prochaine mise à jour</div>':`<div class="lab-tech-stats"><span>${esc(t[3])}</span><b>${id==='bio01'?'+'+(lv*6)+' PV':id==='arm01'?'+'+lv+' % dégâts':id==='mob01'?'+'+lv+' % vitesse':id==='log01'?'+'+Math.floor(lv/2)+' places':id==='exp01'?'+'+Math.floor(lv/2)+' salles':'+'+(lv*1.5).toFixed(1).replace('.0','')+' %'}</b></div><div class="lab-meter"><i style="width:${lv/8*100}%"></i></div><button type="button" class="lab-buy" data-lab-buy="${id}" ${lv>=8||!affordable?'disabled':''}>${lv>=8?'NIVEAU MAX':`AMÉLIORER · ${cost} RECHERCHE`}</button>`}</article>`}).join('')}</section>
+ ${branch.tech.map((t,i)=>{const id=t[0],lv=labLevel(id),locked=i!==0,cost=LAB_COSTS[lv],affordable=data.research>=cost;return `<article class="lab-tech ${locked?'lab-locked':''}"><div class="lab-tech-top"><span class="lab-tech-icon">${locked?'🔒':branch.icon}</span><div><strong>${esc(t[1])}</strong><small>${locked?'EN ATTENTE DE MISE À JOUR':'RECHERCHE ACTIVE'}</small></div><span class="lab-tech-level">${locked?'🔒':`NV. ${lv}/8`}</span></div><p>${esc(t[2])}</p>${locked?'<div class="lab-lock-info">🔒 Déblocage par Puissance totale — prochaine mise à jour</div>':`<div class="lab-tech-stats"><span>${esc(t[3])}</span><b>${id==='bio01'?'+'+(lv*8)+' PV':id==='arm01'?'+'+(lv*2)+' % dégâts':id==='mob01'?'+'+(lv*1.5).toFixed(1).replace('.0','')+' % vitesse':id==='log01'?'+'+lv+' places':id==='exp01'?'+'+(lv===0?0:Math.min(10,lv+1))+' indices':'+'+(lv*4)+' %'}</b></div><div class="lab-meter"><i style="width:${lv/8*100}%"></i></div><button type="button" class="lab-buy" data-lab-buy="${id}" ${lv>=8||!affordable?'disabled':''}>${lv>=8?'NIVEAU MAX':`AMÉLIORER · ${cost} RECHERCHE`}</button>`}</article>`}).join('')}</section>
  <div class="lab-future"><span>⚡ PUISSANCE TOTALE</span><p>Les douze technologies avancées seront déverrouillées par la puissance de ton survivant lors d'une prochaine mise à jour. Aucun seuil fictif n'est appliqué pour l'instant.</p></div>`;
 }
 function upgrade(t){msg('Améliorations remplacées par le Laboratoire K-17.');}
@@ -2482,13 +2816,32 @@ function insure(){if(data.eq2){msg('Les équipements acquis sont désormais cons
 // La grille de navigation contient une salle logique par noeud ; chaque noeud
 // represente ici ses 1, 2 ou 3 cellules, sans les confondre avec des salles voisines.
 const ASH_MAP_COLORS=['#5d998d','#66bad1','#dc9d67','#ad8aca'];
+// Reconnaissance permanente : au moins un avantage des le premier niveau.
+// Affiche des indices, jamais la salle visitee ni son contenu integral.
+function ashLabRecon(run){
+ const lv=Math.max(0,Math.min(8,Number(run?.labLevels?.exp01)||0));
+ if(!lv||!run?.rooms?.length)return new Set();
+ const adjacency=new Map(run.rooms.map(z=>[z.id,[]]));
+ for(const edge of run.edges||[]){if(adjacency.has(edge[0])&&adjacency.has(edge[1])){adjacency.get(edge[0]).push(edge[1]);adjacency.get(edge[1]).push(edge[0]);}}
+ const dist=new Map([[run.current,0]]),queue=[run.current];
+ for(let i=0;i<queue.length;i++){const id=queue[i];for(const next of adjacency.get(id)||[]){if(!dist.has(next)){dist.set(next,dist.get(id)+1);queue.push(next);}}}
+ const visited=new Set(run.visited||[]),previous=new Set(run.intelRooms||[]);
+ // Privilegier les embranchements non explores au-dela des voisins directs.
+ const unknown=[...dist].filter(([id])=>id!==run.current&&!visited.has(id)&&!run.rooms[id].seen&&!previous.has(id));
+ unknown.sort((a,b)=>(a[1]>=2?0:1)-(b[1]>=2?0:1)||a[1]-b[1]||a[0]-b[0]);
+ const result=new Set(unknown.slice(0,Math.min(10,lv+1)).map(([id])=>id));
+ // La technologie avancee identifie un objectif, sans devoiler tout le parcours.
+ if(lv>=4){const arena=unknown.filter(([id])=>isArena(id,run)).sort((a,b)=>a[1]-b[1])[0];if(arena)result.add(arena[0]);}
+ if(lv>=7){const boss=unknown.filter(([id])=>isBoss(id,run)).sort((a,b)=>a[1]-b[1])[0];if(boss)result.add(boss[0]);}
+ return result;
+}
 function ashMapMarkup(run,mini=false){
  if(!run||!run.rooms||!run.rooms.some(z=>Number.isFinite(z.gx)&&Number.isFinite(z.gy)))return mini?'<span class="ash-map-unavailable">—</span>':'';
  const base=mini?39:39, sx=base,sy=base*1.06,subx=mini?18:13,suby=mini?19:13.7;
  const current=run.rooms[run.current],mapNodes=run.rooms.filter(z=>Number.isFinite(z.gx)&&Number.isFinite(z.gy));
  // 0.8.9.57: la mini-carte est un journal permanent, non une fenetre +/- 1 salle.
  // visited est conservé comme source de verité lors de la reprise d'anciennes sauvegardes.
- const visited=new Set(run.visited||[]),intel=new Set(run.intelRooms||[]);
+ const visited=new Set(run.visited||[]),intel=new Set([...(run.intelRooms||[]),...ashLabRecon(run)]);
  const known=z=>!!z.seen||visited.has(z.id)||intel.has(z.id)||z.id===run.current;
  const nodes=mapNodes.filter(z=>known(z)&&(!mini||(Math.abs(z.gx-current.gx)<=2&&Math.abs(z.gy-current.gy)<=2)));
  const bounds=mini?[{gx:current.gx-2,gy:current.gy-2},{gx:current.gx+2,gy:current.gy+2}]:mapNodes;
@@ -2503,6 +2856,7 @@ function ashMapMarkup(run,mini=false){
   const a=center(run.rooms[e[0]]),b=center(run.rooms[e[1]]);
   return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#648596" stroke-opacity=".7" stroke-width="${mini?2.8:4}" stroke-linecap="round"/>`;
  }).join('');
+ const labRecon=ashLabRecon(run),reconLv=Math.max(0,Math.min(8,Number(run?.labLevels?.exp01)||0));
  const tiles=nodes.map(z=>{
   const px=(z.gx-minx)*sx+pad,py=(z.gy-miny)*sy+pad;
   const type=roomGeom(z).type, scanned=!z.seen&&!(run.visited||[]).includes(z.id)&&z.id!==run.current,here=z.id===run.current;
@@ -2512,7 +2866,7 @@ function ashMapMarkup(run,mini=false){
    type==='tall'?`M${px} ${py}h${subx}v${suby*2}h${-subx}z`:
    type==='ell'?`M${px} ${py}h${subx*2}v${suby}h${-subx}v${suby}h${-subx}z`:
    `M${px} ${py}h${subx}v${suby}h${-subx}z`;
-  const label=here?'●':scanned?'?':isBoss(z.id,run)?'B':isArena(z.id,run)?'A':isExit(z.id,run)?'E':z.kind==='outpost'?'P':(!scanned&&ASH_DISCOVERY_ROLES.has(z.fieldRole)?(z.fieldEvent?.state==='used'?'d':'D'):'');
+  const label=here?'●':scanned?(labRecon.has(z.id)&&reconLv>=7&&isBoss(z.id,run)?'B?':labRecon.has(z.id)&&reconLv>=4&&isArena(z.id,run)?'A?':'?'):isBoss(z.id,run)?'B':isArena(z.id,run)?'A':isExit(z.id,run)?'E':z.kind==='outpost'?'P':(!scanned&&ASH_DISCOVERY_ROLES.has(z.fieldRole)?(z.fieldEvent?.state==='used'?'d':'D'):'');
   const cx=px+subx/2,cy=py+suby/2;
   return `<g><path d="${shape}" fill="${fill}" fill-opacity="${scanned?.52:.96}" stroke="${here?'#fff3cc':'#a8cad3'}" stroke-width="${here?1.8:.9}" stroke-linejoin="round"/>${here?`<circle cx="${cx}" cy="${cy}" r="${mini?3.7:4.9}" fill="#11202a"/><circle cx="${cx}" cy="${cy}" r="${mini?2:2.7}" fill="#fff0ca"/>`:label?`<text x="${cx}" y="${cy+3}" fill="#f8f6ee" font-size="${mini?8:11}" text-anchor="middle" font-weight="900">${label}</text>`:''}</g>`;
  }).join('');
@@ -2528,7 +2882,7 @@ function ashRenderMiniMap(run){
  const count=$('ashMiniMapCount');if(count)count.textContent=`${discovered}/${run.rooms.length}`;
  const scanned=(run.intelRooms||[]).length;
  // La carte est réactualisée à chaque changement de salle ou découverte.
- const signature=[run.current,discovered,scanned,(run.intelRooms||[]).join(',')].join('|');
+ const signature=[run.current,discovered,scanned,run.labLevels?.exp01||0,(run.intelRooms||[]).join(',')].join('|');
  if(signature!==ashLastMiniSignature){target.innerHTML=ashMapMarkup(run,true);
  const mapSvg=target.querySelector('svg');
  if(mapSvg){
@@ -2556,15 +2910,16 @@ function render(){if(!data.run&&!data.labK17?.migrated)labMigrate();if(!data.run
  $('upDmg').textContent=data.dmgLv>=8?'NIVEAU MAX':`Améliorer +3 dégâts · ${4+data.dmgLv*4} recherche`;$('upHp').disabled=data.hpLv>=8||data.research<4+data.hpLv*4;$('upDmg').disabled=data.dmgLv>=8||data.research<4+data.dmgLv*4;$('equipped').textContent=data.equipped?`${data.equipped.name} · ${data.equipped.rar} · ${data.equipped.dmg} dégâts · ${data.equipped.rate} tirs/s`:'Aucune';$('insurance').textContent=data.insured===data.equipped?.id?'ASSURÉE':'Non assurée';$('insure').textContent=`Assurer · ${premium()} ¤`;$('insure').disabled=data.insured===data.equipped.id||data.credits<premium();$('stash').innerHTML='<p class="ui-help">Armes stockées au refuge · appuie sur ÉQUIPER pour changer d’arme.</p>'+(data.stash.length?data.stash.map((g,i)=>itemRow(g,i,'stash')).join(''):'<p class="ui-empty">Réserve vide : extrais des armes pour remplir ton stock.</p>');if($('merchantLaunch'))$('merchantLaunch').innerHTML=afIcon('merchant')+' OUVRIR LE COMPTOIR · '+data.credits+' crédits';$('log').dataset.region=region().maxSector;
  
  if(data.eq2){$('insurance').textContent='Acquis définitivement';$('insure').hidden=true;$('insure').disabled=true;}
- const status=$('regionStatus');if(status)status.textContent='K-17 · secteurs '+(region().maxSector+1)+'/4 · avant-postes '+region().outposts.length+'/3 · Gardien '+(region().bossDefeated?'vaincu':'à découvrir')+' · Helix '+(data.unlockHelix?'débloquée (non jouable)':'verrouillée');if($('homeSectorCount'))$('homeSectorCount').textContent=(region().maxSector+1)+' / 4 secteurs';if($('homeSectorFill'))$('homeSectorFill').style.width=(25*(region().maxSector+1))+'%';if($('homeSectorProgress'))$('homeSectorProgress').setAttribute('aria-valuenow',String(region().maxSector+1));if($('statusChipSector'))$('statusChipSector').textContent='Secteurs '+(region().maxSector+1)+'/4';if($('statusChipOutpost'))$('statusChipOutpost').textContent='Avant-postes '+region().outposts.length+'/3';if($('statusChipBoss'))$('statusChipBoss').textContent='Gardien '+(region().bossDefeated?'vaincu':'à découvrir');renderRefugeCharacter();renderRefugeProgress();ashRenderContractSelection();ashRenderCareer();ashRenderLongProgress();ashRefreshContractHud(null);if(refugeActivePage==='merchant')merchantRender();if(refugeActivePage==='chests')ashChestRender();return}let room=r.rooms[r.current];if($('uiMission'))$('uiMission').textContent=uiMission().replace(/^[⚠⚡✦✓⚔📡◈]\s*/u,'');$('roomTitle').textContent=isBoss(r.current,r)?'BOSS K-17':isArena(r.current,r)?'ARÈNE':isExit(r.current,r)?'EXTRACTION':room.kind==='secret'?'SALLE SECRÈTE':room.kind==='outpost'?'BALISE':`K-17 · ${r.current+1}/${r.rooms.length}`;$('hpText').textContent=String(Math.ceil(player.hp));$('hpText').title=`${Math.ceil(player.hp)} / ${player.max} PV`;$('hpFill').style.height=`${clamp(player.hp/player.max*100,0,100)}%`;$('hpFill').setAttribute('y',String(100-clamp(player.hp/player.max*100,0,100)));$('hpFill').setAttribute('height',String(clamp(player.hp/player.max*100,0,100)));if($('hpFill'))$('hpFill').classList.toggle('ash-critical',player.hp/player.max<.28);runProgress();$('bagCount').textContent=r.eq2?`${r.eq2.loot.length}/${E2.capacity(r)}`:`${r.bag.length}/6`;ashRenderMiniMap(r);const xp=$('xpDisplay');if(xp){xp.title=`${Math.floor(r.xp)} / ${xpThreshold(r.runLevel)} XP`; xp.title=`${Math.floor(r.xp)} / ${xpThreshold(r.runLevel)} XP`; xp.textContent='XP';xp.setAttribute('aria-label',`Niveau ${r.runLevel}`);xp.style.display='block';$('xpFill').style.height=(100*clamp(r.xp/xpThreshold(r.runLevel),0,1))+'%';$('xpFill').setAttribute('y',String(100-100*clamp(r.xp/xpThreshold(r.runLevel),0,1)));$('xpFill').setAttribute('height',String(100*clamp(r.xp/xpThreshold(r.runLevel),0,1)))}ashRefreshContractHud(r);const statusHint=hudStatus();$('hint').textContent=statusHint;$('hint').hidden=!statusHint}
+ const status=$('regionStatus');if(status)status.textContent='K-17 · secteurs '+(region().maxSector+1)+'/4 · avant-postes '+region().outposts.length+'/3 · Gardien '+(region().bossDefeated?'vaincu':'à découvrir')+' · Helix '+(data.unlockHelix?'débloquée (non jouable)':'verrouillée');if($('homeSectorCount'))$('homeSectorCount').textContent=(region().maxSector+1)+' / 4 secteurs';if($('homeSectorFill'))$('homeSectorFill').style.width=(25*(region().maxSector+1))+'%';if($('homeSectorProgress'))$('homeSectorProgress').setAttribute('aria-valuenow',String(region().maxSector+1));if($('statusChipSector'))$('statusChipSector').textContent='Secteurs '+(region().maxSector+1)+'/4';if($('statusChipOutpost'))$('statusChipOutpost').textContent='Avant-postes '+region().outposts.length+'/3';if($('statusChipBoss'))$('statusChipBoss').textContent='Gardien '+(region().bossDefeated?'vaincu':'à découvrir');renderRefugeCharacter();renderRefugeProgress();ashRenderSurvivorProgress();ashRenderContractSelection();ashRenderCareer();ashRenderLongProgress();ashRefreshContractHud(null);if(refugeActivePage==='merchant')merchantRender();if(refugeActivePage==='chests')ashChestRender();return}let room=r.rooms[r.current];if($('uiMission'))$('uiMission').textContent=uiMission().replace(/^[⚠⚡✦✓⚔📡◈]\s*/u,'');$('roomTitle').textContent=isBoss(r.current,r)?'BOSS K-17':isArena(r.current,r)?'ARÈNE':isExit(r.current,r)?'EXTRACTION':room.kind==='secret'?'SALLE SECRÈTE':room.kind==='outpost'?'BALISE':`K-17 · ${r.current+1}/${r.rooms.length}`;$('hpText').textContent=String(Math.ceil(player.hp));$('hpText').title=`${Math.ceil(player.hp)} / ${player.max} PV`;$('hpFill').style.height=`${clamp(player.hp/player.max*100,0,100)}%`;$('hpFill').setAttribute('y',String(100-clamp(player.hp/player.max*100,0,100)));$('hpFill').setAttribute('height',String(clamp(player.hp/player.max*100,0,100)));if($('hpFill'))$('hpFill').classList.toggle('ash-critical',player.hp/player.max<.28);runProgress();$('bagCount').textContent=r.eq2?`${r.eq2.loot.length}/${E2.capacity(r)}`:`${r.bag.length}/6`;ashRenderMiniMap(r);const xp=$('xpDisplay');if(xp){xp.title=`${Math.floor(r.xp)} / ${xpThreshold(r.runLevel)} XP`; xp.title=`${Math.floor(r.xp)} / ${xpThreshold(r.runLevel)} XP`; xp.textContent='XP';xp.setAttribute('aria-label',`Niveau ${r.runLevel}`);const afStatus=$('afHudBar')?.querySelector('.af-status');if(afStatus){const xpGoal=Math.max(1,xpThreshold(r.runLevel));afStatus.dataset.level=String(r.runLevel);afStatus.dataset.xp=`${Math.floor(r.xp)}/${xpGoal}`;afStatus.style.setProperty('--af-xp-progress',`${Math.round(100*clamp(r.xp/xpGoal,0,1))}%`);}xp.style.display='block';$('xpFill').style.height=(100*clamp(r.xp/xpThreshold(r.runLevel),0,1))+'%';$('xpFill').setAttribute('y',String(100-100*clamp(r.xp/xpThreshold(r.runLevel),0,1)));$('xpFill').setAttribute('height',String(100*clamp(r.xp/xpThreshold(r.runLevel),0,1)))}ashRefreshContractHud(r);const statusHint=hudStatus();$('hint').textContent=statusHint;$('hint').hidden=!statusHint}
 function closeOverlay(){if(overlay==='level'&&data.run?.pendingLevels>0)return;if(overlayReturn==='pause'&&data.run&&(overlay==='bag'||overlay==='map')){overlayReturn='';openOverlay('pause');return;}overlayReturn='';overlay='';$('overlay').hidden=true;$('overlay').innerHTML='';if(data.run?.pendingLevels>0&&ashSweepChoiceTimer===null)openLevelChoice()}
 function openOverlay(mode){if(!data.run)return;if(mode==='bag'&&data.run.eq2){e2OpenBag();return;}overlay=mode;let r=data.run,html='<button class="close" data-op="close">'+afIcon('close')+' Fermer</button>';if(mode==='bag'){html+=`<h3>${afIcon("bag")} SAC D’EXPÉDITION <span class="ui-tag">${r.bag.length}/6 places</span></h3><p class="muted">Arme équipée et objets transportés. La rareté est indiquée par une couleur.</p><div class="ash-run-build"><b>CONFIGURATION</b> · ${ashGearById(r.loadout?.helmet)?.name||'Casque standard'} · ${ashGearById(r.loadout?.module)?.name||'Module vide'}</div><div class="ui-group-label">ARME ÉQUIPÉE</div>${uiWeaponCard(r.equipped,-1,'bag',true)}<div class="ui-group-label">OBJETS TRANSPORTÉS</div>${r.bag.length?r.bag.map((w,i)=>({w,i})).sort((a,b)=>(LOOT_RARITY_RANK[b.w.rar]||0)-(LOOT_RARITY_RANK[a.w.rar]||0)||lootPower(b.w)-lootPower(a.w)||a.i-b.i).map(({w,i})=>uiWeaponCard(w,i,'bag',false)).join(''):'<p class="ui-empty">Ton sac est vide. Ramasse les armes au sol pour les ajouter ici.</p>'}<p class="ui-help">${afIcon("info")} Équiper une autre arme replace l’ancienne dans le sac. L’assurance reste attachée à son objet d’origine.</p>`;
-}else if(mode==='map'){let coords=r.rooms.filter(z=>Number.isFinite(z.gx)&&Number.isFinite(z.gy));if(coords.length){html+='<h3>'+afIcon('map')+' CARTE TACTIQUE — K-17</h3><p class="muted">Découvertes : '+ashDiscoveryStats(r).complete+'/'+ashDiscoveryStats(r).total+' explorées.</p><p class="muted">La forme des nouvelles pièces varie de 1×2 à 3×3 ; les anciennes expéditions gardent leurs formes historiques. Un ? représente un indice de salle non visitée.</p><div class="ash-map-scroll">'+ashMapMarkup(r,false)+'</div><p class="muted">'+r.visited.length+'/'+r.rooms.length+' salles explorées · ● Vous · B Gardien · A Arène · E Extraction · P Balise · D Découverte (d terminée). Glisse pour explorer la carte.</p>';}else html+='<h3>ANCIENNE EXPÉDITION</h3><div class="cellmap">'+r.rooms.map((z,i)=>`<div class="${i===r.current?'here':z.seen?'known':''}">${z.seen?i+1:'?'}</div>`).join('')+'</div>';}else if(mode==='pause')html=`<section class="ash-pause-card" role="dialog" aria-modal="true" aria-labelledby="ash-pause-title"><div class="ash-pause-emblem" aria-hidden="true">${afIcon("pause")}</div><div class="ash-pause-eyebrow">K-17 · EXPÉDITION EN COURS</div><h2 id="ash-pause-title">PAUSE</h2><p class="ash-pause-subtitle">Le temps est suspendu. Ton expédition est sauvegardée.</p><p class="ash-run-build">${r.eq2?'Sac d’extraction · '+r.eq2.loot.length+'/'+E2.capacity(r)+' objets non sécurisés':(ashGearById(r.loadout?.helmet)?.name||'Casque standard')+' · '+(ashGearById(r.loadout?.module)?.name||'Module vide')}</p><div class="ash-pause-stats"><span>${afIcon("map")} ${r.visited.length}/${r.rooms.length} SALLES</span><span>${afIcon("bag")} ${r.eq2?r.eq2.loot.length+'/'+E2.capacity(r):r.bag.length+'/6'} OBJETS</span><span>${afIcon("xp")} NIV. ${r.runLevel||1}</span><span>${afIcon("map")} ${ashDiscoveryStats(r).complete}/${ashDiscoveryStats(r).total} DÉCOUVERTES</span></div><div class="ash-pause-actions"><button type="button" class="ash-pause-primary" data-op="resume">${afIcon("resume")} REPRENDRE</button><div class="ash-pause-shortcuts"><button type="button" data-op="bag">${afIcon("bag")} SAC</button><button type="button" data-op="map">${afIcon("map")} CARTE</button></div><button type="button" class="ash-pause-danger" data-op="retreat">Abandonner l’expédition</button></div><div class="ash-pause-footer">${afIcon("save")} Sauvegarde locale active</div></section>`;
+}else if(mode==='map'){let coords=r.rooms.filter(z=>Number.isFinite(z.gx)&&Number.isFinite(z.gy));if(coords.length){html+='<h3>'+afIcon('map')+' CARTE TACTIQUE — K-17</h3><p class="muted">Découvertes : '+ashDiscoveryStats(r).complete+'/'+ashDiscoveryStats(r).total+' explorées.</p><p class="muted">La forme des nouvelles pièces varie de 1×2 à 3×3 ; les anciennes expéditions gardent leurs formes historiques. Un ? représente une salle repérée mais non visitée. Avec la cartographie avancée, A? signale une arène et B? le boss.</p><div class="ash-map-scroll">'+ashMapMarkup(r,false)+'</div><p class="muted">'+r.visited.length+'/'+r.rooms.length+' salles explorées · ● Vous · B Gardien · A Arène · E Extraction · P Balise · D Découverte (d terminée). Glisse pour explorer la carte.</p>';}else html+='<h3>ANCIENNE EXPÉDITION</h3><div class="cellmap">'+r.rooms.map((z,i)=>`<div class="${i===r.current?'here':z.seen?'known':''}">${z.seen?i+1:'?'}</div>`).join('')+'</div>';}else if(mode==='pause')html=`<section class="ash-pause-card" role="dialog" aria-modal="true" aria-labelledby="ash-pause-title"><div class="ash-pause-emblem" aria-hidden="true">${afIcon("pause")}</div><div class="ash-pause-eyebrow">K-17 · EXPÉDITION EN COURS</div><h2 id="ash-pause-title">PAUSE</h2><p class="ash-pause-subtitle">Le temps est suspendu. Ton expédition est sauvegardée.</p><p class="ash-run-build">${r.eq2?'Sac d’extraction · '+r.eq2.loot.length+'/'+E2.capacity(r)+' objets non sécurisés':(ashGearById(r.loadout?.helmet)?.name||'Casque standard')+' · '+(ashGearById(r.loadout?.module)?.name||'Module vide')}</p><div class="ash-pause-stats"><span>${afIcon("map")} ${r.visited.length}/${r.rooms.length} SALLES</span><span>${afIcon("bag")} ${r.eq2?r.eq2.loot.length+'/'+E2.capacity(r):r.bag.length+'/6'} OBJETS</span><span>${afIcon("xp")} NIV. ${r.runLevel||1}</span><span>${afIcon("map")} ${ashDiscoveryStats(r).complete}/${ashDiscoveryStats(r).total} DÉCOUVERTES</span></div><div class="ash-pause-actions"><button type="button" class="ash-pause-primary" data-op="resume">${afIcon("resume")} REPRENDRE</button><div class="ash-pause-shortcuts"><button type="button" data-op="bag">${afIcon("bag")} SAC</button><button type="button" data-op="map">${afIcon("map")} CARTE</button></div><button type="button" class="ash-pause-danger" data-op="retreat">Abandonner l’expédition</button></div><div class="ash-pause-footer">${afIcon("save")} Sauvegarde locale active</div></section>`;
 else if(mode==='retreatConfirm')html=`<section class="ash-pause-card ash-pause-confirm" role="dialog" aria-modal="true" aria-labelledby="ash-pause-confirm-title"><div class="ash-pause-emblem danger" aria-hidden="true">${afIcon("danger")}</div><h2 id="ash-pause-confirm-title">ABANDONNER ?</h2><p>${data.run?.eq2?'Le nouveau butin non sécurisé et les crédits de l’expédition seront perdus. Tes équipements acquis resteront possédés.':'Ton équipement non assuré et les crédits gagnés pendant cette expédition seront perdus.'}</p><button type="button" class="ash-pause-primary" data-op="backPause">CONTINUER L’EXPÉDITION</button><button type="button" class="ash-pause-danger" data-op="confirmRetreat">CONFIRMER L’ABANDON</button></section>`;$('overlay').innerHTML=html;$('overlay').hidden=false;persist()}
 function tool(title,html){$('toolsTitle').textContent=title;$('toolsBody').innerHTML=html;$('tools').hidden=false}
 function backup(){persist();const code=btoa(unescape(encodeURIComponent(JSON.stringify(data))));tool('EXPORT / IMPORT',`<p>Le code inclut le refuge et l’expédition en cours. Conserve-le dans Notes ou Fichiers.</p><textarea id="exportCode" readonly></textarea><button id="copyCode">Copier le code</button><p>Restaurer une sauvegarde :</p><textarea id="importCode" placeholder="Colle ici une sauvegarde..."></textarea><button id="restoreCode">Restaurer</button>`);$('exportCode').value=code;$('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText($('exportCode').value);msg('Code copié.')}catch(e){$('exportCode').select();msg('Sélectionne le texte pour le copier.')}};$('restoreCode').onclick=()=>{const previous=data;try{const decoded=JSON.parse(decodeURIComponent(escape(atob($('importCode').value.trim()))));if(!valid(decoded)||(decoded.eq2&&!E2.validate(decoded))||(decoded.run?.eq2&&!E2.validateRun(decoded.run)))throw Error('format');if(!confirm('Remplacer toute la progression actuelle ?'))return;data=decoded;if(!data.run&&!data.eq2&&!e2MigrateWhenSafe())throw Error('migration');setPlayer();if(data.run&&isArena(data.run.current,data.run))enforceArena();bullets=[];closeOverlay();runProgress();if(!persist())throw Error('sauvegarde impossible');render();if(data.run?.pendingLevels>0)openLevelChoice();$('tools').hidden=true;msg('Sauvegarde restaurée.')}catch(e){data=previous;setPlayer();render();msg('Import interrompu : sauvegarde initiale préservée.')}}}
+$('ashPrepCancel').addEventListener('click',ashClosePrep);$('ashPrepConfirm').addEventListener('click',()=>{ashClosePrep();ashOpenDifficulty();});$('ashDifficultyBack').addEventListener('click',()=>{ashCloseDifficulty();ashOpenPrep();});$('ashDifficultyLaunch').addEventListener('click',()=>{ashCloseDifficulty();start();});$('ashPrepOverlay').addEventListener('click',e=>{if(e.target.id==='ashPrepOverlay')ashClosePrep();});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('ashPrepOverlay').hidden)ashClosePrep();if(e.key==='Escape'&&!$('ashDifficultyOverlay').hidden)ashCloseDifficulty();});
 $('ashContractPicker').addEventListener('click',e=>{const b=e.target.closest('[data-contract-choice]');if(b)ashSelectContract(b.dataset.contractChoice);});
-$('upHp').onclick=()=>upgrade('hp');$('upDmg').onclick=()=>upgrade('dmg');$('insure').onclick=insure;$('merchantLaunch').onclick=()=>merchantOpen();$('start').onclick=start;
+$('upHp').onclick=()=>upgrade('hp');$('upDmg').onclick=()=>upgrade('dmg');$('insure').onclick=insure;$('merchantLaunch').onclick=()=>merchantOpen();$('start').onclick=ashOpenPrep;
 $('bagBtn').onclick=()=>openOverlay('bag');$('mapBtn').onclick=()=>openOverlay('map');$('pauseBtn').onclick=()=>openOverlay('pause');
 // iOS/PWA: la carte doit répondre au toucher même lorsqu'un autre doigt utilise le joystick.
 // pointerup ouvre directement le panneau; click reste disponible au clavier et à la souris.
@@ -2636,7 +2991,67 @@ function roomObstacles(room){
    base.push([x+55,y+76,52,32],[x+245,y+277,57,37]);
   }
  }
- return base;
+ return base.concat(envV4Architecture(room,base));
+}
+
+// ENV V4: deterministic physically-solid industrial architecture.
+// Only new expeditions opt in. Existing saves keep their original collision layout.
+// Candidates occupy corner work-zones; all paths are checked on a radius-expanded grid.
+function envV4Hash(a,b,c){let n=(Math.imul(a|0,374761393)^Math.imul(b|0,668265263)^Math.imul(c|0,1274126177))|0;n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967296;}
+function envV4Intersects(a,b,pad=0){return a[0]<b[0]+b[2]+pad&&a[0]+a[2]+pad>b[0]&&a[1]<b[1]+b[3]+pad&&a[1]+a[3]+pad>b[1];}
+function envV4Reachable(room,rects){
+ const geom=roomGeom(room),step=12,cols=Math.ceil(geom.w/step),rows=Math.ceil(geom.h/step),rad=17;
+ const blocked=new Uint8Array(cols*rows);
+ for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
+  const x=(i+.5)*step,y=(j+.5)*step;
+  if(!geom.cells.some(([tx,ty])=>x>=tx*CELL_W+rad&&x<=(tx+1)*CELL_W-rad&&y>=ty*CELL_H+rad&&y<=(ty+1)*CELL_H-rad)||
+     rects.some(r=>x>=r[0]-rad&&x<=r[0]+r[2]+rad&&y>=r[1]-rad&&y<=r[1]+r[3]+rad))blocked[j*cols+i]=1;
+ }
+ const targets=[[180,195]];
+ // All existing playable door portals remain reachable from room centre.
+ for(const [tx,ty] of geom.cells){
+  const x=tx*CELL_W,y=ty*CELL_H;
+  targets.push([x+180,y+195]);
+ }
+ // Main corridors and mandatory interactions remain clear.
+ const pts=targets.map(([x,y])=>[Math.max(0,Math.min(cols-1,Math.floor(x/step))),Math.max(0,Math.min(rows-1,Math.floor(y/step)))]);
+ const start=pts[0][1]*cols+pts[0][0];if(blocked[start])return false;
+ const seen=new Uint8Array(cols*rows),queue=[start];seen[start]=1;
+ for(let k=0;k<queue.length;k++){
+  const v=queue[k],i=v%cols,j=Math.floor(v/cols);
+  for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+   const nx=i+dx,ny=j+dy;if(nx<0||ny<0||nx>=cols||ny>=rows)continue;
+   const ni=ny*cols+nx;if(!blocked[ni]&&!seen[ni]){seen[ni]=1;queue.push(ni);}
+  }
+ }
+ return pts.every(([i,j])=>seen[j*cols+i]);
+}
+const envV4Cache=new WeakMap();
+function envV4Architecture(room,base){
+ if(!room?.envArchitectureV4||!room.solidDecorV42||!['standard','guarded','secret'].includes(room.kind))return [];
+ if(envV4Cache.has(room))return envV4Cache.get(room);
+ const geom=roomGeom(room),added=[],id=Number(room.id)||0,sector=sectorOf(room);
+ // Limited to low-density groups in peripheral corners, away from main routes.
+ for(const [tx,ty] of geom.cells){
+  const x=tx*CELL_W,y=ty*CELL_H,seed=id+tx*43+ty*107+sector*271;
+  const options=[
+   [x+38,y+57,60,39],[x+250,y+65,66,43],
+   [x+42,y+302,72,40],[x+247,y+296,68,44]
+  ];
+  const count=2+Math.floor(envV4Hash(seed,6,19)*2);
+  const order=[0,1,2,3].sort((a,b)=>envV4Hash(seed,a,61)-envV4Hash(seed,b,61));
+  let placed=0;
+  for(const idx of order){
+   if(placed>=count)break;
+   const r=options[idx];
+   // Keep existing collision objects, interaction targets and large passages free.
+   if(base.concat(added).some(o=>envV4Intersects(r,o,23)))continue;
+   if((room.interactables||[]).some(o=>o.state!=='spent'&&Math.hypot(o.x-(r[0]+r[2]/2),o.y-(r[1]+r[3]/2))<(o.radius||20)+75))continue;
+   if(!envV4Reachable(room,base.concat(added,[r])))continue;
+   added.push(r);placed++;
+  }
+ }
+ envV4Cache.set(room,added);return added;
 }
 function collidesSolid(x,y,radius,room){
  const g=roomGeom(room);
@@ -2833,6 +3248,8 @@ const ENEMY_SECTOR_SKINS=[
  {armor:'#76658b',dark:'#383549',metal:'#ada0bf',shine:'#d9bae4'}  // Citadelle
 ];
 function drawEnemyGameplay(enemy,sector,seconds,isBoss=false){
+ // Keep the battle-tested enemy renderer as a guaranteed visibility fallback.
+
  const family=enemy.type;
  const s=ENEMY_SECTOR_SKINS[Math.max(0,Math.min(3,sector|0))];
  const sw=Math.sin(seconds*9+(enemy.x||0)*.031), stride=sw*2.4;
@@ -2965,6 +3382,8 @@ function drawEnemyGameplay(enemy,sector,seconds,isBoss=false){
  }
  if(hitAmt>0){cx.save();cx.globalAlpha=hitAmt*.68;cx.strokeStyle='#ffe1b0';cx.lineWidth=1.6;cx.beginPath();cx.ellipse(0,-6,23,26,0,-2.5,-.8);cx.stroke();cx.restore();}
  cx.restore();
+
+
 }
 
 // V42 : habillage procedurale léger, 100 % calculé à partir de la salle.
@@ -3442,55 +3861,55 @@ window.__ashfallVisualStats=()=>({paints:staticPaintCount,rooms:staticSurfaces.s
 // 0.8.9.49 — Les objets gardent les mêmes positions et règles; seules leurs formes changent.
 function drawRefinedChest(room,r){
  if(room.chest!=='closed'&&room.chest!=='opened')return;
- const opened=room.chest==='opened';
- const isEpic=isArena(r.current,r);
- const guarded=isGuarded(r.current,r)&&room.enemies.length>0;
- const col=isEpic?'#c99df6':'#f2cd83', side='#70523b', dark='#302d2b';
- const fx=Math.max(0,Math.min(1,(room.chestFx||0)/1.15));
- const time=performance.now()/1000;
+ const opened=room.chest==='opened',epic=isArena(r.current,r),guarded=isGuarded(r.current,r)&&room.enemies.length>0;
+ const fx=Math.max(0,Math.min(1,(room.chestFx||0)/1.15)),time=performance.now()/1000;
+ const accent=epic?'#bc8af0':guarded?'#ff8866':'#7bddd5';
  cx.save();cx.translate(180,110);
- // ombre portée au sol et halo réservé aux récompenses d'arène
- cx.fillStyle='rgba(3,10,13,.40)';cx.beginPath();cx.ellipse(0,24,34,9,0,0,Math.PI*2);cx.fill();
- if(isEpic||fx>0){cx.globalAlpha=isEpic?.18+Math.sin(time*3)*.04:fx*.38;cx.fillStyle=col;cx.beginPath();cx.ellipse(0,8,33,22,0,0,Math.PI*2);cx.fill();cx.globalAlpha=1;}
- // corps 3/4: les trois faces ont des valeurs distinctes
- cx.fillStyle=dark;cx.fillRect(-25,-4,50,30);
- cx.fillStyle='#a77c52';cx.beginPath();cx.moveTo(-24,0);cx.lineTo(22,0);cx.lineTo(19,22);cx.lineTo(-22,22);cx.closePath();cx.fill();
- cx.fillStyle='#805b3c';cx.beginPath();cx.moveTo(22,0);cx.lineTo(27,-4);cx.lineTo(25,17);cx.lineTo(19,22);cx.closePath();cx.fill();
- cx.fillStyle='#e3bd79';cx.fillRect(-22,2,42,4);
- cx.fillStyle='#4b3c31';cx.fillRect(-21,17,40,4);
- for(const bx of [-18,12]){cx.fillStyle='#d4b17e';cx.fillRect(bx,3,5,16);cx.fillStyle='#6b543d';cx.fillRect(bx+1,6,3,2);cx.fillRect(bx+1,13,3,2);}
- // serrure et rivets
- cx.fillStyle=guarded?'#df8d69':'#e7d39e';cx.fillRect(-3,4,7,12);cx.fillStyle='#3d3838';cx.fillRect(0,7,2,5);
- // le couvercle bascule vers l'arrière lors de l'ouverture; le coffre reste présent
+ // Industrial extraction crate: solid perspective, mechanical hinges and lid.
+ cx.fillStyle='rgba(0,6,11,.54)';cx.beginPath();cx.ellipse(2,26,37,11,0,0,Math.PI*2);cx.fill();
+ if(epic||fx){cx.globalAlpha=.09+(epic?.09:0)+fx*.17;cx.fillStyle=accent;cx.beginPath();cx.ellipse(0,14,38,23,0,0,Math.PI*2);cx.fill();cx.globalAlpha=1;}
+ // side depth
+ cx.fillStyle='#0a141d';cx.beginPath();cx.moveTo(20,-2);cx.lineTo(29,-9);cx.lineTo(29,18);cx.lineTo(20,25);cx.closePath();cx.fill();
+ cx.fillStyle='#1c3440';cx.beginPath();cx.moveTo(-27,-3);cx.lineTo(20,-3);cx.lineTo(20,25);cx.lineTo(-27,25);cx.closePath();cx.fill();
+ cx.fillStyle='#334c58';cx.fillRect(-25,0,43,4);
+ cx.fillStyle='#0b1c26';cx.fillRect(-24,6,41,15);
+ cx.fillStyle='#2b4651';cx.fillRect(-23,8,39,2);
+ cx.fillStyle='#49606b';cx.fillRect(-25,21,43,3);
+ // armor brackets, industrial fasteners
+ for(const x of [-22,12]){
+  cx.fillStyle='#607782';cx.fillRect(x,-2,6,25);
+  cx.fillStyle='#1c2d35';cx.fillRect(x+1,3,4,14);
+  cx.fillStyle='#a4bac1';cx.fillRect(x+2,5,2,2);cx.fillRect(x+2,17,2,2);
+ }
+ // front latch + rarity indicator
+ cx.fillStyle='#0a1119';cx.fillRect(-6,5,14,16);
+ cx.fillStyle='#859aa3';cx.fillRect(-5,6,12,3);
+ cx.fillStyle=accent;cx.fillRect(-3,12,8,4);
+ cx.fillStyle='#111f27';cx.fillRect(-2,13,6,2);
+ cx.fillStyle='#1a2b35';cx.fillRect(-25,25,9,3);cx.fillRect(11,25,9,3);
+ // two back-mounted hinge cylinders
+ for(const x of [-19,15]){cx.fillStyle='#111d24';cx.fillRect(x,-11,6,9);cx.fillStyle='#657f8a';cx.fillRect(x+1,-10,4,3);}
  if(opened){
-  cx.fillStyle='#181b20';cx.beginPath();cx.moveTo(-22,-1);cx.lineTo(23,-1);cx.lineTo(20,6);cx.lineTo(-19,6);cx.closePath();cx.fill();
-  cx.save();cx.translate(0,-5);cx.rotate(-.47);
-  cx.fillStyle='#45382f';cx.fillRect(-25,-13,51,15);
-  cx.fillStyle='#aa8356';cx.fillRect(-22,-11,45,10);
-  cx.fillStyle='#e6c28a';cx.fillRect(-22,-11,45,3);cx.restore();
-  cx.fillStyle='rgba(255,218,129,.28)';cx.beginPath();cx.ellipse(0,0,14,5,0,0,Math.PI*2);cx.fill();
+  // lid hinged upright at back: no floating lid.
+  cx.fillStyle='#07141c';cx.beginPath();cx.moveTo(-27,-8);cx.lineTo(23,-8);cx.lineTo(23,3);cx.lineTo(-27,3);cx.closePath();cx.fill();
+  cx.fillStyle='#123642';cx.fillRect(-23,-5,43,6);
+  cx.fillStyle=accent;cx.globalAlpha=.46;cx.fillRect(-19,-4,35,2);cx.globalAlpha=1;
+  cx.fillStyle='#263e49';cx.beginPath();cx.moveTo(-26,-8);cx.lineTo(-22,-34);cx.lineTo(20,-34);cx.lineTo(24,-8);cx.closePath();cx.fill();
+  cx.fillStyle='#0b1d26';cx.beginPath();cx.moveTo(-20,-12);cx.lineTo(-17,-29);cx.lineTo(15,-29);cx.lineTo(19,-12);cx.closePath();cx.fill();
+  cx.strokeStyle='#69818a';cx.lineWidth=2;cx.beginPath();cx.moveTo(-25,-8);cx.lineTo(-22,-34);cx.lineTo(20,-34);cx.lineTo(24,-8);cx.stroke();
+  cx.fillStyle=accent;cx.fillRect(-13,-31,25,2);
  }else{
-  cx.fillStyle='#3c322b';cx.beginPath();cx.moveTo(-27,-4);cx.lineTo(-17,-18);cx.lineTo(18,-18);cx.lineTo(27,-4);cx.closePath();cx.fill();
-  cx.fillStyle='#b88c59';cx.beginPath();cx.moveTo(-24,-5);cx.lineTo(-16,-15);cx.lineTo(16,-15);cx.lineTo(24,-5);cx.closePath();cx.fill();
-  cx.fillStyle='#dec087';cx.fillRect(-24,-6,47,3);
-  cx.fillStyle='#e7d49b';cx.fillRect(-3,-15,7,10);
+  // Closed sloped lid in perspective
+  cx.fillStyle='#0c1921';cx.beginPath();cx.moveTo(-29,-5);cx.lineTo(-20,-19);cx.lineTo(20,-19);cx.lineTo(29,-5);cx.closePath();cx.fill();
+  cx.fillStyle='#364d58';cx.beginPath();cx.moveTo(-25,-6);cx.lineTo(-18,-17);cx.lineTo(18,-17);cx.lineTo(25,-6);cx.closePath();cx.fill();
+  cx.fillStyle='#647b84';cx.beginPath();cx.moveTo(-20,-15);cx.lineTo(19,-15);cx.lineTo(22,-11);cx.lineTo(-22,-11);cx.closePath();cx.fill();
+  cx.fillStyle=accent;cx.fillRect(-9,-12,18,2);
+  cx.fillStyle='#0d2029';cx.fillRect(-4,-17,8,6);
  }
- if(guarded&&!opened){
-  cx.strokeStyle='#d7846b';cx.lineWidth=2.1;cx.strokeRect(-26,-6,54,31);
-  // pictogramme de verrou sans emoji, stable sur iOS
-  cx.strokeStyle='#ffd1ae';cx.lineWidth=2;cx.beginPath();cx.arc(0,-31,5,Math.PI,Math.PI*2);cx.stroke();
-  cx.fillStyle='#cf8e70';cx.fillRect(-6,-31,12,9);
- }else if(!opened){
-  cx.strokeStyle=isEpic?'#d3aff1':'#b6dbd6';cx.lineWidth=1.7;cx.strokeRect(-26,-6,54,31);
- }
+ if(guarded&&!opened){cx.strokeStyle='#e78367';cx.lineWidth=2;cx.strokeRect(-28,-5,56,32);}
  if(fx>0){
-  cx.globalAlpha=fx;
-  cx.strokeStyle=col;cx.lineWidth=3.5;cx.beginPath();cx.arc(0,1,30+(1-fx)*22,0,Math.PI*2);cx.stroke();
-  for(let i=0;i<5;i++){let a=time*1.9+i*Math.PI*2/5;cx.fillStyle=col;cx.fillRect(Math.cos(a)*19-1,-17-Math.sin(a)*11,3,3);}
-  cx.globalAlpha=1;
+  cx.globalAlpha=fx;cx.strokeStyle=accent;cx.lineWidth=2.5;cx.beginPath();cx.arc(0,1,30+(1-fx)*16,0,Math.PI*2);cx.stroke();cx.globalAlpha=1;
  }
- cx.textAlign='center';cx.font='bold 10px sans-serif';cx.fillStyle=guarded?'#ffd5ae':opened?'#a8c8d2':col;
- /* Le coffre communique son état par la serrure et le couvercle, sans étiquette. */
  cx.restore();
 }
 
@@ -3518,36 +3937,76 @@ function drawRefinedOutpost(room){
 
 function extractionContested(room){return room.enemies.some(e=>length(e,{x:180,y:195})<105);}
 function drawExtractionGround(r,room){
- const x=180,y=195,active=!!r.exitStarted;
- const contested=active&&extractionContested(room);
+ const x=180,y=195,active=!!r.exitStarted,contested=active&&extractionContested(room);
  const progress=Math.max(0,Math.min(1,(r.exitCharge||0)/3));
- const time=performance.now()/1000;
+ const remaining=Math.max(0,Math.min(1,(r.exitTime||0)/12));
+ const t=performance.now()/1000,reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+ const motion=reduce?0:t,PI=Math.PI,TAU=2*PI;
+ const color=contested?'#ff806c':active?'#a2ffe5':'#f6c57c';
  cx.save();cx.translate(x,y);
- // la zone réellement sûre est de rayon 39 : la bordure principale reste à cette distance
- cx.fillStyle='rgba(7,25,29,.29)';cx.beginPath();cx.arc(0,0,38,0,Math.PI*2);cx.fill();
- cx.strokeStyle='#284752';cx.lineWidth=10;cx.beginPath();cx.arc(0,0,49,0,Math.PI*2);cx.stroke();
+ // Shadow and eight machined radial braces: an actual anchored industrial machine.
+ cx.fillStyle='rgba(0,0,0,.36)';cx.beginPath();cx.ellipse(0,8,74,59,0,0,TAU);cx.fill();
+ cx.fillStyle='#0b222c';cx.strokeStyle='#466b7b';cx.lineWidth=2;
+ cx.beginPath();cx.arc(0,0,62,0,TAU);cx.fill();cx.stroke();
  for(let i=0;i<8;i++){
-  const a=-Math.PI/2+i*Math.PI/4;
-  cx.strokeStyle='#587782';cx.lineWidth=4;cx.beginPath();cx.arc(0,0,49,a+.065,a+.47);cx.stroke();
+  const a=i*TAU/8,ca=Math.cos(a),sa=Math.sin(a);
+  cx.save();cx.rotate(a);
+  cx.fillStyle=i%2?'#233c48':'#2c4854';cx.fillRect(49,-5,17,10);
+  cx.fillStyle='#0b1d27';cx.fillRect(55,-3,9,6);
+  cx.fillStyle=active?(contested?'#fa766b':'#73d6c7'):'#bd9360';
+  cx.globalAlpha=.65+.3*Math.sin(motion*2+i*.8);cx.fillRect(57,-2,4,4);
+  cx.restore();
  }
- cx.lineWidth=4;cx.strokeStyle=active?(contested?'#fa886f':'#74e6cf'):'#70b9b6';
- cx.beginPath();cx.arc(0,0,39,0,Math.PI*2);cx.stroke();
- // anneau d'activation (3s) puis progression restante (12s), sans toucher aux temporisations
- cx.lineWidth=5;cx.strokeStyle=active?(contested?'#e87863':'#9bf5e1'):'#f8c979';
- cx.beginPath();cx.arc(0,0,44,-Math.PI/2,-Math.PI/2+Math.PI*2*(active?Math.max(0,Math.min(1,(r.exitTime||0)/12)):progress));cx.stroke();
+ // Machined outer housing and interrupted metal tracks.
+ cx.strokeStyle='#091a22';cx.lineWidth=12;cx.beginPath();cx.arc(0,0,50,0,TAU);cx.stroke();
+ cx.strokeStyle='#496675';cx.lineWidth=8;cx.beginPath();cx.arc(0,0,51,0,TAU);cx.stroke();
+ for(let i=0;i<12;i++){
+  let a=-PI/2+i*TAU/12;
+  cx.strokeStyle=i%3===0?'#7c9daa':'#314e5b';cx.lineWidth=3;
+  cx.beginPath();cx.arc(0,0,51,a+.04,a+.37);cx.stroke();
+ }
+ cx.fillStyle='rgba(4,25,30,.88)';cx.beginPath();cx.arc(0,0,38,0,TAU);cx.fill();
+ // A safe-zone boundary at radius 39, matching existing interaction mechanics.
+ cx.strokeStyle=contested?'#a44f47':active?'#3c8d85':'#377d84';cx.lineWidth=4;
+ cx.beginPath();cx.arc(0,0,39,0,TAU);cx.stroke();
+ // Dynamic luminous ring with restrained bloom.
+ const fraction=active?remaining:progress;
+ cx.save();cx.shadowColor=color;cx.shadowBlur=reduce?0:10;
+ cx.strokeStyle=color;cx.lineWidth=5;cx.lineCap='round';
+ cx.beginPath();cx.arc(0,0,44,-PI/2,-PI/2+TAU*fraction);cx.stroke();
+ cx.restore();
+ // Sequential activation nodes, visible even at small iPhone scale.
+ for(let i=0;i<12;i++){
+  const a=-PI/2+i*TAU/12;
+  cx.save();cx.rotate(a);cx.fillStyle=i/12<=fraction?color:'#203f4a';
+  cx.fillRect(41,-1.4,5,2.8);cx.restore();
+ }
+ // Animated field lines during charging, subdued when inactive.
+ if(!reduce&&(active||progress>.05)){
+  cx.strokeStyle=color;cx.globalAlpha=.12+.07*Math.sin(motion*5);
+  cx.lineWidth=1;
+  for(let i=0;i<3;i++){
+   const a=motion*(active?.48:.25)+i*TAU/3;
+   cx.beginPath();cx.arc(0,0,32,a,a+.9);cx.stroke();
+  }
+  cx.globalAlpha=1;
+ }
+ // Four armored anchor pylons, with active light strips.
  for(let i=0;i<4;i++){
-  const a=Math.PI/4+i*Math.PI/2,bx=Math.cos(a)*57,by=Math.sin(a)*57;
-  cx.fillStyle='#162c38';cx.fillRect(bx-6,by-8,12,16);
-  cx.strokeStyle='#5f8693';cx.lineWidth=1;cx.strokeRect(bx-6,by-8,12,16);
-  cx.fillStyle=contested?'#ff9276':active?'#a0ffe9':'#d2dece';
-  cx.globalAlpha=.75+.2*Math.sin(time*2.6+i);cx.fillRect(bx-2,by-5,4,10);cx.globalAlpha=1;
+  const a=PI/4+i*PI/2,bx=Math.cos(a)*57,by=Math.sin(a)*57;
+  cx.save();cx.translate(bx,by);cx.rotate(a-PI/4);
+  cx.fillStyle='#081a24';cx.fillRect(-8,-10,16,20);
+  cx.fillStyle='#385562';cx.fillRect(-7,-9,14,18);
+  cx.fillStyle='#142b36';cx.fillRect(-5,-7,10,14);
+  cx.fillStyle=color;cx.globalAlpha=.65+.25*Math.sin(motion*2.5+i);
+  cx.fillRect(-2,-5,4,10);cx.restore();
  }
  cx.restore();
- // Pendant les 3 secondes, garder les textes au-dessus du socle, le Nomade reste visible
  if(!active){
-  cx.save();cx.textAlign='center';cx.font='bold 11px sans-serif';cx.fillStyle='#c4f9eb';
-  /* Le cercle lui-même identifie l'extraction. */
-  cx.fillStyle='#f8d69c';cx.font='bold 17px sans-serif';cx.fillText(Math.round(progress*100)+' %',x,y+6);
+  cx.save();cx.textAlign='center';
+  cx.fillStyle='#091f27';cx.beginPath();cx.arc(x,y,25,0,TAU);cx.fill();
+  cx.fillStyle='#f8d69c';cx.font='bold 17px sans-serif';
+  cx.fillText(Math.round(progress*100)+' %',x,y+6);
   cx.restore();
  }
 }
@@ -3555,19 +4014,23 @@ function drawExtractionGround(r,room){
 function drawExtractionCountdown(r,room){
  if(!r.exitStarted)return;
  const contested=extractionContested(room),seconds=Math.max(0,Math.ceil(r.exitTime||0));
+ const t=performance.now()/1000,reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
  cx.save();cx.translate(180,195);
- cx.fillStyle=contested?'rgba(65,20,18,.88)':'rgba(8,30,33,.88)';
- cx.beginPath();cx.arc(0,0,25,0,Math.PI*2);cx.fill();
- cx.strokeStyle=contested?'#ffad85':'#b2fff0';cx.lineWidth=2.5;
- cx.beginPath();cx.arc(0,0,25,0,Math.PI*2);cx.stroke();
- cx.fillStyle='#fff';cx.textAlign='center';cx.font='bold 29px sans-serif';cx.fillText(String(seconds),0,10);
- cx.font='bold 10px sans-serif';cx.fillStyle=contested?'#ffc1a3':'#acffec';
- /* Rouge et halo pulsant en cas de contestation. */
- cx.font='bold 9px sans-serif';cx.fillStyle=contested?'#ffc1a3':'#d1eae8';
- /* Le chiffre central est la seule indication textuelle conservée. */
+ const danger=contested||seconds<=5,accent=contested?'#ff967a':danger?'#ffc18d':'#adffed';
+ // Concentric warning light and a solid readout over player/weapon.
+ if(!reduce){
+  cx.strokeStyle=accent;cx.globalAlpha=.12+.12*Math.sin(t*6);
+  cx.lineWidth=3;cx.beginPath();cx.arc(0,0,30+Math.sin(t*5)*2,0,Math.PI*2);cx.stroke();
+  cx.globalAlpha=1;
+ }
+ cx.fillStyle=contested?'rgba(55,18,19,.96)':'rgba(6,30,37,.95)';
+ cx.beginPath();cx.arc(0,0,26,0,Math.PI*2);cx.fill();
+ cx.strokeStyle=accent;cx.lineWidth=2.5;
+ cx.beginPath();cx.arc(0,0,26,0,Math.PI*2);cx.stroke();
+ cx.textAlign='center';cx.textBaseline='middle';cx.fillStyle='#ffffff';
+ cx.font='bold 29px sans-serif';cx.fillText(String(seconds),0,1);
  cx.restore();
 }
-
 
 // 0.8.9.67 — Moteur de ressenti de combat, 100 % cosmetique.
 // Aucun effet ne touche aux dommages, cadences, collisions, AI, drops ou sauvegardes.
@@ -3707,8 +4170,8 @@ function combatFxPaintHurt(){
 
 function draw(){let r=data.run;if(!r)return;let room=r.rooms[r.current];combatFxReset(room);let sec=sectorOf(room),theme=SECTORS[sec];
  cx.setTransform(1,0,0,1,0,0);cx.clearRect(0,0,360,cv.height);cx.save();
- const camera=cameraFor(room);window.__ashfallCamera={x:camera.x,y:camera.y,zoom:camera.zoom};cx.setTransform(camera.zoom,0,0,camera.zoom,-camera.x*camera.zoom,-camera.y*camera.zoom);
- cx.fillStyle='#091b25';cx.fillRect(camera.x,camera.y,360/camera.zoom,cv.height/camera.zoom);
+ const camera=cameraFor(room);window.__ashfallCamera={x:camera.x,y:camera.y,zoom:camera.zoom};cx.setTransform(camera.zoom,0,0,camera.zoom*1,-camera.x*camera.zoom,-camera.y*camera.zoom*1);
+ cx.fillStyle='#091b25';cx.fillRect(camera.x,camera.y,360/camera.zoom,cv.height/(camera.zoom*1));
  // V44: la couche statique couvre toutes les cellules ; aucun effet anime n'entre dans le cache.
  drawCachedSurface(room,sec,theme);
  drawDynamicHazard(room,sec);
@@ -3723,7 +4186,18 @@ if(room.enemies.length){
  if(tactical){cx.save();cx.strokeStyle='#f8d68b';cx.lineWidth=2;cx.setLineDash([4,3]);cx.beginPath();cx.arc(tactical.x,tactical.y,25,0,Math.PI*2);cx.stroke();cx.setLineDash([]);cx.fillStyle='#ffe8b3';cx.font='bold 9px sans-serif';cx.textAlign='center';/* La cible tactique est identifiée par un anneau doré en pointillés. */cx.restore()}
 }
 drawFieldEvent(room);drawRefinedChest(room,r);if(room.kind==='outpost')drawRefinedOutpost(room);if(isExit(r.current,r))drawExtractionGround(r,room)
-lootDraw(room);ashSweepFxDraw();ashDrawEnemyTelegraphs(room);for(let e of room.enemies){const guardian=ashGuardianInRoom(e,room);drawEnemyGameplay(e,sec,performance.now()/1000+(e.x*.04),guardian);const bw=guardian?70:30,bhy=guardian?-57:-39;cx.fillStyle='#081722';cx.fillRect(e.x-bw/2,e.y+bhy,bw,5);cx.fillStyle=guardian?'#c99de5':'#79e0a1';cx.fillRect(e.x-bw/2,e.y+bhy,bw*Math.max(0,e.hp/e.max),5)}combatFxPaintBullets();if(isExit(r.current,r)&&r.exitStarted)drawExtractionCountdown(r,room);if((player.dashFlash||0)>0){cx.strokeStyle='#a5faff';cx.lineWidth=5;cx.beginPath();cx.arc(player.x,player.y,18+25*player.dashFlash/.22,0,Math.PI*2);cx.stroke()}if(player.inv<=0||Math.floor(player.inv*14)%2===0){
+lootDraw(room);ashSweepFxDraw();ashDrawEnemyTelegraphs(room);for(let e of room.enemies){const guardian=ashGuardianInRoom(e,room);/* Extraction V2.1 safety: legacy enemies rendered unconditionally until the 3D renderer is validated on iPhone. */
+   /* V3.1: show the 3D model alone when drawing succeeds.
+     Fall back to the known-good 2D sprite on a missing renderer or exception. */
+  let drawnIn3D=false;
+  if(window.AshBestiary3D && typeof window.AshBestiary3D.draw==='function'){
+    cx.save();
+    try{drawnIn3D=window.AshBestiary3D.draw(cx,e,sec,performance.now()/1000,guardian,player)===true;}
+    catch(err){if(!window.__ash3dWarned){console.warn('ASHFALL 3D fallback:',err);window.__ash3dWarned=true;}}
+    finally{cx.restore();}
+  }
+  if(!drawnIn3D)drawEnemyGameplay(e,sec,performance.now()/1000+(e.x*.04),guardian);
+const bw=guardian?70:30,bhy=guardian?-57:-39;cx.fillStyle='#081722';cx.fillRect(e.x-bw/2,e.y+bhy,bw,5);cx.fillStyle=guardian?'#c99de5':'#79e0a1';cx.fillRect(e.x-bw/2,e.y+bhy,bw*Math.max(0,e.hp/e.max),5)}combatFxPaintBullets();if(isExit(r.current,r)&&r.exitStarted)drawExtractionCountdown(r,room);if((player.dashFlash||0)>0){cx.strokeStyle='#a5faff';cx.lineWidth=5;cx.beginPath();cx.arc(player.x,player.y,18+25*player.dashFlash/.22,0,Math.PI*2);cx.stroke()}if(player.inv<=0||Math.floor(player.inv*14)%2===0){
  // Graphics P2: read-only visual adapter, old drawing retained as atomic fallback.
  let aimX=player.facingX||1,aimY=player.facingY||0;
  // The last real player bullet supplies the actual fired direction, including spread.
@@ -3731,14 +4205,14 @@ lootDraw(room);ashSweepFxDraw();ashDrawEnemyTelegraphs(room);for(let e of room.e
  if(latest){aimX=latest.vx;aimY=latest.vy;}
  else if(room.enemies?.length){const seen=room.enemies.filter(e=>hasLineOfSight(player.x,player.y,e.x,e.y,room));const tactical=tacticalObjectToTarget(room,seen);const target=tactical||(seen.length?seen.reduce((a,b)=>length(player,a)<length(player,b)?a:b):null);if(target){aimX=target.x-player.x;aimY=target.y-player.y;}}
  const mag=Math.hypot(aimX,aimY)||1;aimX/=mag;aimY/=mag;
- const drawn=window.AshTopDownSurvivor?.draw(cx,{x:player.x,y:player.y,fx:aimX,fy:aimY})||false;
+ const drawn=(window.AshSurvivor3D?.draw(cx,{x:player.x,y:player.y,fx:aimX,fy:aimY})||false)||(window.AshTopDownSurvivor?.draw(cx,{x:player.x,y:player.y,fx:aimX,fy:aimY})||false);
  if(!drawn){ // Cold-start emergency silhouette in NEW skin family, never old visual.
   cx.save();cx.translate(player.x,player.y);cx.fillStyle='#0a1720';cx.beginPath();cx.ellipse(0,19,13,4,0,0,Math.PI*2);cx.fill();
   cx.fillStyle='#354556';cx.fillRect(-8,-20,16,24);cx.fillStyle='#242d40';cx.beginPath();cx.moveTo(-11,-22);cx.lineTo(-8,-35);cx.lineTo(0,-40);cx.lineTo(8,-35);cx.lineTo(11,-22);cx.closePath();cx.fill();
   cx.fillStyle='#1c2938';cx.fillRect(-7,3,6,18);cx.fillRect(2,3,6,18);cx.restore();
  }
  }combatFxPaintWorld();cx.restore();if(isBoss(r.current,r))ashDrawBossHud(room);combatFxPaintHurt();}
-function hurt(amount,cause='combat'){if(!player||!data.run||player.inv>0)return;if(data.run.eq2){const f=data.run.eq2.fx;if(E2.profile(data.run).shield>0&&f.shieldReady){f.shieldReady=false;f.shieldCooldown=32;player.inv=.35;msg('Égide : impact absorbé.');return;}}window.dispatchEvent(new CustomEvent('ashfall-fx',{detail:{kind:'damage',x:player.x,y:player.y}}));combatFxDamagePlayer();player.hp-=Math.max(1,Math.round(amount*(1-ashRunGear().resist)));player.inv=.65;if(player.hp<=0)finish(false,cause)}
+function hurt(amount,cause='combat'){if(!player||!data.run||player.inv>0)return;if(data.run.eq2){const f=data.run.eq2.fx;if(E2.profile(data.run).shield>0&&f.shieldReady){f.shieldReady=false;f.shieldCooldown=32;player.inv=.35;msg('Égide : impact absorbé.');return;}}window.dispatchEvent(new CustomEvent('ashfall-fx',{detail:{kind:'damage',x:player.x,y:player.y}}));combatFxDamagePlayer();if(perkCount('dodge')&&Math.random()<[0,.05,.08,.11][perkCount('dodge')]){player.inv=.35;msg('Esquive !');return}const low=player.hp/player.max<.3;const mitigation=1-[0,.06,.10,.14][perkCount('armor')];const last=low?1-[0,.20,.30,.40][perkCount('laststand')]:1;player.hp-=Math.max(1,Math.round(amount*ashDifficultyFactor()*(1-ashRunGear().resist)*mitigation*last));if(perkCount('emergency'))data.run._emergencyUntil=(data.run.elapsedSeconds||0)+2;player.inv=.65;if(player.hp<=0)finish(false,cause)}
 function transition(){
  if(locked())return false;
  const r=data.run,id=r.current,room=r.rooms[id];
@@ -3750,10 +4224,10 @@ function transition(){
  return false;
 }
 function objective(name){let r=data.run;if(!r.objectives.includes(name))r.objectives.push(name)}
-function update(dt){if(!data.run||overlay)return;enforceArena();let r=data.run,room=r.rooms[r.current];if(r.eq2)e2Tick(dt,room);combatFxStep(dt,room);ashSweepFxStep(dt);if(Number.isFinite(r.elapsedSeconds))r.elapsedSeconds+=dt;environment(room);if(room.cleared){room.hazardOn=false;for(let i=bullets.length-1;i>=0;i--)if(bullets[i].enemy)bullets.splice(i,1)}if(sanitizeEnemyPositions(room))persist();let sec=sectorOf(room);room.envPhase+=dt; updateInteractables(room,dt);if(!data.run)return; if(!room.cleared&&!room.hazardDisabled&&room.kind!=='outpost'&&!isExit(r.current,r)&&r.current!==0&&(sec===1||sec===2)){room.hazardCooldown-=dt;if(room.hazardCooldown<=0){room.hazardOn=!room.hazardOn;room.hazardCooldown=room.hazardOn?1.15:2.9;if(!room.hazardOn)room.hazardX=sec===1?pick(105,255):pick(105,255)}if(room.hazardOn){let hit=sec===1?Math.abs(player.x-room.hazardX)<14&&player.y>50&&player.y<350:Math.hypot(player.x-room.hazardX,player.y-205)<42;if(hit){if(!room.hazardTick||room.hazardTick<=0){hurt(sec===1?11:15,'environnement');if(!data.run)return;room.hazardTick=.65}}}room.hazardTick=Math.max(0,(room.hazardTick||0)-dt)}player.inv=Math.max(0,player.inv-dt);player.fire=Math.max(0,player.fire-dt);player.dash=0;player.dashCooldown=Math.max(0,(player.dashCooldown||0)-dt);player.dashFlash=Math.max(0,(player.dashFlash||0)-dt);
-let vx=joy.x+(keyState.ArrowRight||keyState.d?1:0)-(keyState.ArrowLeft||keyState.a?1:0),vy=joy.y+(keyState.ArrowDown||keyState.s?1:0)-(keyState.ArrowUp||keyState.w?1:0),mag=Math.hypot(vx,vy);if(mag>1){vx/=mag;vy/=mag}player.dx=vx;player.dy=vy;if(mag>.15){player.facingX=vx;player.facingY=vy}advanceSolid(player,vx*150*(1+perkBonus('speed')+labLevel('mob01')*.01+ashRunGear().speed+(r.eq2&&r.eq2.fx.killWindow>0?ashRunGear().killSpeed:0))*dt,vy*150*(1+perkBonus('speed')+labLevel('mob01')*.01+ashRunGear().speed+(r.eq2&&r.eq2.fx.killWindow>0?ashRunGear().killSpeed:0))*dt,12,room);if(transition())return;
+function update(dt){if(!data.run||overlay)return;enforceArena();let r=data.run,room=r.rooms[r.current];if(r.eq2)e2Tick(dt,room);combatFxStep(dt,room);ashSweepFxStep(dt);if(Number.isFinite(r.elapsedSeconds))r.elapsedSeconds+=dt;environment(room);room._entryGrace=Math.max(0,(room._entryGrace||0)-dt);if(room.cleared){room.hazardOn=false;for(let i=bullets.length-1;i>=0;i--)if(bullets[i].enemy)bullets.splice(i,1)}if(sanitizeEnemyPositions(room))persist();let sec=sectorOf(room);room.envPhase+=dt; updateInteractables(room,dt);if(!data.run)return; if(!room.cleared&&!room.hazardDisabled&&room.kind!=='outpost'&&!isExit(r.current,r)&&r.current!==0&&(sec===1||sec===2)){room.hazardCooldown-=dt;if(room.hazardCooldown<=0){room.hazardOn=!room.hazardOn;room.hazardCooldown=room.hazardOn?1.15:2.9;if(!room.hazardOn)room.hazardX=sec===1?pick(105,255):pick(105,255)}if(room.hazardOn&&!(room._entryGrace>0)){let hit=sec===1?Math.abs(player.x-room.hazardX)<14&&player.y>50&&player.y<350:Math.hypot(player.x-room.hazardX,player.y-205)<42;if(hit){if(!room.hazardTick||room.hazardTick<=0){hurt(sec===1?11:15,'environnement');if(!data.run)return;room.hazardTick=.65}}}room.hazardTick=Math.max(0,(room.hazardTick||0)-dt)}player.inv=Math.max(0,player.inv-dt);player.fire=Math.max(0,player.fire-dt);player.dash=0;player.dashCooldown=Math.max(0,(player.dashCooldown||0)-dt);player.dashFlash=Math.max(0,(player.dashFlash||0)-dt);
+let vx=joy.x+(keyState.ArrowRight||keyState.d?1:0)-(keyState.ArrowLeft||keyState.a?1:0),vy=joy.y+(keyState.ArrowDown||keyState.s?1:0)-(keyState.ArrowUp||keyState.w?1:0),mag=Math.hypot(vx,vy);if(mag>1){vx/=mag;vy/=mag}player.dx=vx;player.dy=vy;if(mag>.15){player.facingX=vx;player.facingY=vy}advanceSolid(player,vx*150*(1+perkBonus('speed')+((r._emergencyUntil||0)>(r.elapsedSeconds||0)?[0,.20,.30,.40][perkCount('emergency')]:0)+labLevel('mob01')*.015+ashRunGear().speed+(r.eq2&&r.eq2.fx.killWindow>0?ashRunGear().killSpeed:0))*dt,vy*150*(1+perkBonus('speed')+((r._emergencyUntil||0)>(r.elapsedSeconds||0)?[0,.20,.30,.40][perkCount('emergency')]:0)+labLevel('mob01')*.015+ashRunGear().speed+(r.eq2&&r.eq2.fx.killWindow>0?ashRunGear().killSpeed:0))*dt,12,room);if(transition())return;
 updateIncident(room,dt);if(!data.run)return;
-if(room.activated&&isArena(r.current,r)&&room.enemies.length===0&&!room.cleared){room.arenaWave=(room.arenaWave||1)+1;if(room.arenaWave<=3){spawnReinforcement(room,room.arenaWave===2?7:4);if(room.arenaWave===3){const elite=enemiesFor(r.current).find(e=>e.type==='sentinel');const pos=spawnSafe(room,room.enemies,{x:180,y:105});if(elite&&pos)room.enemies.push({...elite,id:uid(),hp:350,max:350,...pos});}player.inv=Math.max(player.inv,.7);msg(`⚠ ARÈNE : vague ${room.arenaWave}/3 !`)}else{room.cleared=true;room.chest='closed';r.economy??={enemy:0,chest:0,room:0,arena:0,boss:0};const arenaReward=pick(150,250);r.earnedCredits+=arenaReward;r.economy.arena+=arenaReward;objective('arène');objective('arène-recherche-1');objective('arène-recherche-2');msg('🏆 VICTOIRE : coffre épique en cours d’ouverture !')}persist()}if(isBoss(r.current,r)&&room.spawned&&room.enemies.length===0&&!room.cleared){room.cleared=true;region().bossDefeated=true;data.unlockHelix=true;r.economy??={enemy:0,chest:0,room:0,arena:0,boss:0};r.earnedCredits+=450;r.economy.boss+=450;objective('boss-k17');objective('boss-recherche');msg('🏆 GARDIEN K-17 VAINCU ! HELIX DÉBLOQUÉ (future région).');persist()}if(!room.cleared&&room.spawned&&room.enemies.length===0&&!isArena(r.current,r)&&!isBoss(r.current,r)&&!incidentBlocksClear(room)){room.cleared=true;if(room.kind!=='start'&&room.kind!=='outpost'){r.economy??={enemy:0,chest:0,room:0,arena:0,boss:0};r.earnedCredits+=20;r.economy.room+=20;objective('combat-'+r.current)}msg('✓ Salle sécurisée : nouvelles portes ouvertes !');persist()}
+if(room.activated&&isArena(r.current,r)&&room.enemies.length===0&&!room.cleared){room.arenaWave=(room.arenaWave||1)+1;if(room.arenaWave<=3){spawnReinforcement(room,room.arenaWave===2?7:4);if(room.arenaWave===3){const elite=enemiesFor(r.current).find(e=>e.type==='sentinel');const pos=spawnSafe(room,room.enemies,{x:180,y:105});if(elite&&pos)room.enemies.push({...elite,id:uid(),hp:Math.round(350*ashDifficultyFactor()),max:Math.round(350*ashDifficultyFactor()),...pos});}player.inv=Math.max(player.inv,.7);msg(`⚠ ARÈNE : vague ${room.arenaWave}/3 !`)}else{room.cleared=true;room.chest='closed';r.economy??={enemy:0,chest:0,room:0,arena:0,boss:0};const arenaReward=pick(150,250);r.earnedCredits+=arenaReward;r.economy.arena+=arenaReward;objective('arène');objective('arène-recherche-1');objective('arène-recherche-2');msg('🏆 VICTOIRE : coffre épique en cours d’ouverture !')}persist()}if(isBoss(r.current,r)&&room.spawned&&room.enemies.length===0&&!room.cleared){room.cleared=true;region().bossDefeated=true;data.unlockHelix=true;r.economy??={enemy:0,chest:0,room:0,arena:0,boss:0};r.earnedCredits+=450;r.economy.boss+=450;objective('boss-k17');objective('boss-recherche');msg('🏆 GARDIEN K-17 VAINCU ! HELIX DÉBLOQUÉ (future région).');persist()}if(!room.cleared&&room.spawned&&room.enemies.length===0&&!isArena(r.current,r)&&!isBoss(r.current,r)&&!incidentBlocksClear(room)){room.cleared=true;if(room.kind!=='start'&&room.kind!=='outpost'){r.economy??={enemy:0,chest:0,room:0,arena:0,boss:0};r.earnedCredits+=20;r.economy.room+=20;objective('combat-'+r.current)}msg('✓ Salle sécurisée : nouvelles portes ouvertes !');persist()}
 if(room.enemies.length&&player.fire<=0){
  const candidates=room.enemies.filter(e=>hasLineOfSight(player.x,player.y,e.x,e.y,room));
  const tactical=tacticalObjectToTarget(room,candidates);
@@ -3761,16 +4235,18 @@ if(room.enemies.length&&player.fire<=0){
   const target=tactical||candidates.reduce((a,b)=>length(player,a)<length(player,b)?a:b);
   const spread=tactical?0:mag>.15?(Math.random()-.5)*.46:(Math.random()-.5)*.09;
   const ang=Math.atan2(target.y-player.y,target.x-player.x)+spread;
-  const shotKind=combatFxFire(player.x,player.y,ang,r.equipped);
-  bullets.push({x:player.x,y:player.y,vx:Math.cos(ang)*300,vy:Math.sin(ang)*300,enemy:false,style:shotKind,dmg:damage()*(1+labLevel('arm01')*.01)*(1+perkBonus('power'))*(1+Math.min(.55,ashRunGear().damage+(r.eq2&&r.eq2.fx.killWindow>0?ashRunGear().killDamage+ashRunGear().frenzy:0))),ttl:1.5});
+  const shotKind=combatFxFire(player.x,player.y,ang,r.equipped);if(perkCount('arc')&&target&&target.hp>0){r._arcShots=(r._arcShots||0)+1;const period=[0,8,7,6][perkCount('arc')];if(r._arcShots%period===0){const chain=room.enemies.filter(e=>e!==target&&e.hp>0&&Math.hypot(e.x-target.x,e.y-target.y)<90).sort((a,b)=>Math.hypot(a.x-target.x,a.y-target.y)-Math.hypot(b.x-target.x,b.y-target.y))[0];if(chain){chain.hp-=7+perkCount('arc')*5;window.dispatchEvent(new CustomEvent('ashfall-fx',{detail:{kind:'impact',x:chain.x,y:chain.y}}));if(chain.hp<=0&&!chain.lootDropped)awardEnemyDefeat(room,chain)}}}
+  bullets.push({x:player.x,y:player.y,vx:Math.cos(ang)*300,vy:Math.sin(ang)*300,enemy:false,style:shotKind,dmg:damage()*(1+labLevel('arm01')*.02)*(1+perkBonus('power'))*(1+Math.min(.55,ashRunGear().damage+(r.eq2&&r.eq2.fx.killWindow>0?ashRunGear().killDamage+ashRunGear().frenzy:0))),ttl:1.5});
   player.fire=1/(r.equipped.rate*(1+perkBonus('rapid')+ashRunGear().rate+(r.eq2&&r.equipped.optimized==='rate'?.05:0)))
  }}
-for(let e of room.enemies){let d=length(e,player),angle=Math.atan2(player.y-e.y,player.x-e.x);e.wind=e.wind||0;if(ashBossTick(e,room,dt))continue;
+for(let e of room.enemies){
+ if(room._entryGrace>0){e.wind=0;e.cd=Math.max(e.cd,room._entryGrace+.15);if(e.guardianAI){e.guardianAI.attack=null;e.guardianAI.wind=0;}}
+ let d=length(e,player),angle=Math.atan2(player.y-e.y,player.x-e.x);e.wind=e.wind||0;if(room._entryGrace<=0&&ashBossTick(e,room,dt))continue;
  const oppositeWing=roomGeom(room).type==='ell'&&((e.x>355&&player.y>395)||(e.y>395&&player.x>355));
  const navTarget=oppositeWing?{x:180,y:195}:player;
  const moveAngle=Math.atan2(navTarget.y-e.y,navTarget.x-e.x);
 if(e.wind>0){e.wind-=dt;if(e.wind<=0){if(e.type==='chaser'||e.type==='brute'){if(e.type==='chaser')advanceSolid(e,Math.cos(e.aim)*21,Math.sin(e.aim)*21,14,room);let reach=length(e,player);if(reach<(e.type==='brute'?125:115)&&Math.abs(Math.atan2(Math.sin(angle-e.aim),Math.cos(angle-e.aim)))<.48)hurt(e.type==='brute'?25:18)}else{let count=e.type==='sentinel'?3:1;for(let j=0;j<count;j++){let a=e.aim+(j-(count-1)/2)*.18;bullets.push({x:e.x,y:e.y,vx:Math.cos(a)*(e.type==='sentinel'?190:e.type==='drone'?215:175),vy:Math.sin(a)*(e.type==='sentinel'?190:e.type==='drone'?215:175),enemy:true,dmg:e.type==='sentinel'?22:e.type==='drone'?16:14,ttl:3});if(j===0)combatFxEnemyShot(e.x,e.y,a,e.type)}}e.cd=e.type==='sentinel'?2.0:e.type==='drone'?1.16:e.type==='brute'?1.7:e.type==='ranged'?1.45:1.26}}
-else{if((oppositeWing?Math.hypot(navTarget.x-e.x,navTarget.y-e.y):d)>(e.type==='ranged'?140:e.type==='drone'?160:e.type==='sentinel'?155:e.type==='brute'?36:36)){advanceSolid(e,Math.cos(moveAngle)*dt*(e.type==='sentinel'?42:e.type==='brute'?53:e.type==='drone'?90:e.type==='ranged'?64:106),Math.sin(moveAngle)*dt*(e.type==='sentinel'?42:e.type==='brute'?53:e.type==='drone'?90:e.type==='ranged'?64:106),14,room)}ashStrafeEnemy(e,room,dt,angle,d);e.cd-=dt;if(e.cd<=0&&d<(e.type==='chaser'?135:300)){e.aim=angle;e.wind=e.type==='chaser'?.68:e.type==='brute'?1.05:e.type==='sentinel'?1.05:e.type==='drone'?.52:.62}}
+else{if((oppositeWing?Math.hypot(navTarget.x-e.x,navTarget.y-e.y):d)>(e.type==='ranged'?140:e.type==='drone'?160:e.type==='sentinel'?155:e.type==='brute'?36:36)){advanceSolid(e,Math.cos(moveAngle)*dt*(e.type==='sentinel'?42:e.type==='brute'?53:e.type==='drone'?90:e.type==='ranged'?64:106),Math.sin(moveAngle)*dt*(e.type==='sentinel'?42:e.type==='brute'?53:e.type==='drone'?90:e.type==='ranged'?64:106),14,room)}ashStrafeEnemy(e,room,dt,angle,d);e.cd-=dt;if(room._entryGrace<=0&&e.cd<=0&&d<(e.type==='chaser'?135:300)){e.aim=angle;e.wind=e.type==='chaser'?.68:e.type==='brute'?1.05:e.type==='sentinel'?1.05:e.type==='drone'?.52:.62}}
 }
 if(!data.run)return;
 for(let b of bullets){
@@ -3782,7 +4258,7 @@ for(let b of bullets){
   if(collidesSolid(b.x,b.y,4,room)){combatFxWall(b.x,b.y,b);window.dispatchEvent(new CustomEvent('ashfall-fx',{detail:{kind:'impact',x:b.x,y:b.y,enemy:b.enemy}}));b.ttl=0;break}
  }
  if(b.ttl<=0)continue;
- b.ttl-=dt;if(b.enemy){if(length(b,player)<16){hurt(b.dmg);if(!data.run)return;b.ttl=0}}else{for(let e of room.enemies){if(length(b,e)<15){e.hp-=b.dmg;combatFxHit(e,b.dmg,e.hp<=0,b);window.dispatchEvent(new CustomEvent('ashfall-fx',{detail:{kind:e.hp<=0?'death':'impact',x:e.x,y:e.y}}));b.ttl=0;if(e.hp<=0&&!e.lootDropped){awardEnemyDefeat(room,e)}break}}}}
+ b.ttl-=dt;if(b.enemy){if(length(b,player)<16){if(room._entryGrace>0){b.ttl=0;continue;}hurt(b.dmg);if(!data.run)return;b.ttl=0}}else{for(let e of room.enemies){if(length(b,e)<15){const hitDmg=b.dmg*ashPerkDamageFactor(e);e.hp-=hitDmg;combatFxHit(e,hitDmg,e.hp<=0,b);window.dispatchEvent(new CustomEvent('ashfall-fx',{detail:{kind:e.hp<=0?'death':'impact',x:e.x,y:e.y}}));if(!b._pierced&&perkCount('pierce')&&Math.random()<[0,.15,.22,.30][perkCount('pierce')]){b._pierced=true;b.dmg*=.65}else b.ttl=0;if(e.hp<=0&&!e.lootDropped){awardEnemyDefeat(room,e)}break}}}}
 room.enemies=room.enemies.filter(e=>e.hp>0);
 // À la fin d’un combat, supprimer immédiatement les tirs hostiles et désarmer les dangers de salle.
 // Une arène non terminée garde ses vagues : le nettoyage ne valide jamais une salle prématurément.
@@ -3794,8 +4270,7 @@ if(room.enemies.length===0){
 if(room.chest==='closed'&&room.cleared&&room.enemies.length===0&&!locked()&&!incidentBlocksClear(room)){
  room.chest='opened';room.chestFx=1.15;
  const g=makeWeapon(freeChestWeaponLevel(r,room));
- if(isArena(r.current,r)){g.rar='Épique';g.dmg=Math.max(36,g.dmg+10)}
- if(isGuarded(r.current,r)&&g.rar==='Commun'){g.rar='Rare';g.dmg+=8}
+ g._ashFromChest=true; // Rarity is rolled centrally, never forced to Epic/Rare.
  lootSpawn(room,'weapon',180,118,g);lootSpawn(room,'credits',177,122,null,pick(12,24));
  ground(room)[ground(room).length-1].source='chest';msg('✨ Coffre ouvert automatiquement · '+g.name+' !');persist();
 }
@@ -3892,13 +4367,14 @@ if(data.run){runProgress();data.run.exitWave=data.run.exitWave||(data.run.exitSt
 // Initial training: self-contained guide. The flag is intentionally separate from ashfall_pwa_v1.
 const TUTORIAL_KEY='ashfall_tutorial_v1';
 const tutorialSteps=[
- {title:'Bienvenue dans ASHFALL',scene:'home,weapon',desc:'Tu es un survivant dans K-17. Chaque expédition consiste à explorer des salles, récupérer du butin, puis ressortir vivant.',tip:'Ta première mission : apprendre les commandes. Rien de ce tutoriel ne met ton équipement en danger.'},
- {title:'Bouger et tirer',scene:'survivor,weapon',desc:'Pose le pouce dans la zone gauche pour placer le joystick, puis glisse. Relâche pour choisir un nouveau centre. Ton personnage tire automatiquement sur les ennemis à portée : pas besoin d’appuyer sur un bouton de tir.',tip:'Bouger réduit la précision : ralentir un instant peut aider à viser.'},
- {title:'Déplacement simplifié',scene:'survivor',desc:'Le joystick est en bas au centre. Pose ton doigt dans sa zone et déplace-toi. Les tirs sont automatiques et il n’y a plus de bouton DASH.',tip:'Bouge pour éviter les attaques annoncées.'},
- {title:'Portes rouges et vertes',scene:'lock,next',desc:'Les portes rouges vers des salles inconnues s’ouvrent après sécurisation de la salle. Tu peux généralement revenir par les portes vertes déjà visitées.',tip:'Exception : une arène ou un boss verrouille toutes les sorties jusqu’à la victoire.'},
- {title:'Butin de salle',scene:'loot,xp,bag',desc:'Quand la salle est sécurisée, tous les crédits et points d’XP encore au sol rejoignent automatiquement ton survivant. Les armes, elles, restent sur place.',tip:'Les silhouettes d’armes au sol prennent la couleur de leur rareté. Approche-toi pour les récupérer : leur illustration complète apparaît dans le sac.'},
- {title:'Niveaux et bonus',scene:'xp,research',desc:'L’XP fait monter ton niveau d’expédition : choisis un bonus temporaire parmi trois. Les coffres s’ouvrent après élimination des ennemis. Les caches et terminaux se déclenchent par proximité après sécurisation d’une salle, sans nouveau bouton.',tip:'Tes bonus de niveau disparaissent à la fin de l’expédition. Tes talents achetés au refuge restent.'},
- {title:'Extraire pour tout garder',scene:'extraction',desc:'Trouve une salle d’extraction puis reste 3 secondes dans le cercle pour la valider. Une fois lancée, la procédure continue tant que tu restes dans la salle, même si tu sors du cercle. Quitter la salle annule la procédure.',tip:'Les anciennes expéditions gardent leurs règles. En Équipements 2.0, les objets acquis restent possédés et les nouvelles trouvailles demandent une extraction.'}
+ {title:'Bienvenue dans ASHFALL',scene:'home,survivor',desc:'Ton refuge est ton point de départ. Explore les secteurs de K-17, affronte leurs dangers, récupère des ressources et reviens vivant pour renforcer ton survivant.',tip:'Ton objectif : préparer une expédition, explorer, puis réussir ton extraction.'},
+ {title:'Contrats et préparation',scene:'home,bag',desc:'Avant de partir, consulte les contrats disponibles et prépare ton équipement dans Survivant. Les contrats donnent des objectifs supplémentaires pendant tes expéditions.',tip:'Vérifie ton arme et ton équipement avant de choisir un secteur.'},
+ {title:'Se déplacer et combattre',scene:'survivor,weapon',desc:'Utilise le joystick en bas de l’écran pour te déplacer. Ton survivant tire automatiquement sur les ennemis à portée. Observe leurs attaques annoncées et évite les zones dangereuses.',tip:'Pas besoin de bouton de tir : concentre-toi sur le placement et l’esquive.'},
+ {title:'Explorer les salles',scene:'lock,next',desc:'Avance de salle en salle à l’aide des portes et de la mini-carte. Certaines portes restent verrouillées tant que les ennemis sont présents. Les arènes et les boss peuvent empêcher la retraite.',tip:'Les salles ont des tailles et des formes différentes : explore aussi leurs extrémités.'},
+ {title:'Butin et raretés',scene:'loot,xp,bag',desc:'Les ennemis peuvent laisser de l’XP, des crédits et des équipements. Les objets existent en six raretés : Commun, Inhabituel, Rare, Épique, Légendaire et Mythique. L’inventaire peut les trier par rareté.',tip:'Observe les couleurs des objets au sol. Récupère les équipements utiles avant de partir.'},
+ {title:'Évolutions d’expédition',scene:'xp,research',desc:'En gagnant de l’XP, tu montes de niveau et choisis une amélioration parmi trois propositions. Elles peuvent renforcer tes statistiques ou ajouter des effets spéciaux qui se combinent entre eux.',tip:'Ces bonus sont temporaires : ils ne remplacent pas les améliorations permanentes du refuge.'},
+ {title:'Extraire et sécuriser son butin',scene:'extraction',desc:'Repère une zone d’extraction et suis les indications du cercle et du compte à rebours. Une extraction réussie permet de revenir au refuge avec les gains prévus par les règles de ton expédition.',tip:'Quitter la salle pendant une procédure d’extraction peut l’annuler. Ne prends pas de risques inutiles avec ton butin.'},
+ {title:'Progresser au refuge',scene:'survivor,bag',desc:'Dans Survivant, consulte et équipe tes objets. Le marchand, les coffres et les améliorations permanentes t’aident à préparer les expéditions suivantes. Tes bonus temporaires, eux, repartent de zéro à chaque expédition.',tip:'Tu peux revoir cette formation à tout moment avec le bouton « Tutoriel » de l’accueil.'}
 ];
 let tutorialIndex=0;
 function tutorialShow(index=0){if(data.run)return;tutorialIndex=clamp(index,0,tutorialSteps.length-1);$('tutorialModal').hidden=false;tutorialRender();}
@@ -3908,6 +4384,105 @@ $('tutorialLaunch').addEventListener('click',()=>tutorialShow(0));
 $('tutorialPrev').addEventListener('click',()=>{tutorialIndex=Math.max(0,tutorialIndex-1);tutorialRender()});
 $('tutorialNext').addEventListener('click',()=>{if(tutorialIndex<tutorialSteps.length-1){tutorialIndex++;tutorialRender()}else{tutorialClose();start()}});
 $('tutorialSkip').addEventListener('click',tutorialClose);
+
+// Refuge V2.2: actions isolated in the game's state scope; no global state duplication.
+function ashWsCompare(w){
+ const next={...w,upgrade:Math.min(5,(Number(w.upgrade)||0)+1)};
+ const num=v=>Number(v||0).toLocaleString('fr-FR',{maximumFractionDigits:2});
+ let stats=[];
+ if(w.slot==='weapon'){
+  const damage=x=>(Number(x.dmg)||0)*(1+.06*(Number(x.upgrade)||0)+(x.optimized==='dmg'?.05:0));
+  const cadence=x=>(Number(x.rate)||0)*(1+(x.optimized==='rate'?.05:0));
+  stats=[['Dégâts / tir',damage(w),damage(next)],['Cadence / s',cadence(w),cadence(next)],['DPS de base',damage(w)*cadence(w),damage(next)*cadence(next)]];
+ }else{
+  const a=e2EffectDetails(w),b=e2EffectDetails(next);
+  stats=[[a.name+(a.unit?' ('+a.unit.trim()+')':''),a.value,b.value]];
+  if(Number(w.stats?.resilience))stats.push(['Résilience (base)',Number(w.stats.resilience),Number(next.stats.resilience)]);
+  if(Number(w.stats?.agility))stats.push(['Agilité (base)',Number(w.stats.agility),Number(next.stats.agility)]);
+ }
+ const rows=stats.map(([label,a,b])=>`<div class="ash-ws-stat-row"><span>${label}</span><span>${num(a)}</span><span class="${b>a?'ash-ws-gain':''}">${num(b)}${b>a?` <em>+${num(b-a)}</em>`:''}</span></div>`).join('');
+ return `<div class="ash-ws-compare" aria-label="Comparaison des statistiques avant et après renforcement"><div class="ash-ws-compare-title">RENFORCEMENT · NIVEAU +${Number(w.upgrade)||0} → +${Number(next.upgrade)||0}</div><div class="ash-ws-compare-head"><span>STATISTIQUE</span><span>ACTUEL</span><span>APRÈS</span></div>${rows}<small class="ash-ws-compare-note">${w.slot==='weapon'?'Valeurs de base de l’arme, hors bonus du personnage.':'Bonus d’équipement calculés par le moteur, hors autres équipements.'}</small></div>`;
+}
+function ashWsOptimizeCompare(w,stat){
+ const next={...w,optimized:stat};
+ const num=v=>Number(v||0).toLocaleString('fr-FR',{maximumFractionDigits:2});
+ let rows=[];
+ if(w.slot==='weapon'){
+  const dmg=x=>(Number(x.dmg)||0)*(1+.06*(Number(x.upgrade)||0)+(x.optimized==='dmg'?.05:0));
+  const rate=x=>(Number(x.rate)||0)*(1+(x.optimized==='rate'?.05:0));
+  rows=[['Dégâts / tir',dmg(w),dmg(next)],['Cadence / s',rate(w),rate(next)],['DPS de base',dmg(w)*rate(w),dmg(next)*rate(next)]];
+ }else{
+  const a=e2EffectDetails(w),b=e2EffectDetails(next);
+  rows=[[a.name+(a.unit?' ('+a.unit.trim()+')':''),a.value,b.value]];
+  if(Number(w.stats?.resilience))rows.push(['Résilience (base)',Number(w.stats.resilience)*(w.optimized==='resilience'?1.08:1),Number(w.stats.resilience)*(stat==='resilience'?1.08:1)]);
+  if(Number(w.stats?.agility))rows.push(['Agilité (base)',Number(w.stats.agility)*(w.optimized==='agility'?1.08:1),Number(w.stats.agility)*(stat==='agility'?1.08:1)]);
+ }
+ const labels={dmg:'DÉGÂTS',rate:'CADENCE',efficiency:'EFFICACITÉ',resilience:'RÉSILIENCE',agility:'AGILITÉ'};
+ const html=rows.map(([label,a,b])=>{const delta=b-a;return `<div class="ash-ws-stat-row"><span>${label}</span><span>${num(a)}</span><span class="${delta>0.00001?'ash-ws-gain':delta<-.00001?'ash-ws-loss':''}">${num(b)}${Math.abs(delta)>.00001?` <em>${delta>0?'+':''}${num(delta)}</em>`:''}</span></div>`}).join('');
+ const unchanged=rows.every(([,a,b])=>Math.abs(b-a)<.00001);
+ const note=unchanged?'Cette option ne modifie pas les statistiques affichées pour cet objet.':'Aperçu calculé avec les formules actuelles du jeu, hors bonus du personnage.';
+ return `<div class="ash-ws-compare ash-ws-opt-compare" aria-live="polite"><div class="ash-ws-compare-title">OPTIMISATION · ${labels[stat]||stat}</div><div class="ash-ws-compare-head"><span>STATISTIQUE</span><span>ACTUEL</span><span>APRÈS</span></div>${html}<small class="ash-ws-compare-note">${note}</small></div>`;
+}
+function ashWorkshopRender(){
+ const panel=document.getElementById('ash-v21-workshop-panel');if(!panel||panel.hidden)return;
+ if(!data.eq2){panel.innerHTML='<h2>ATELIER</h2><p>Équipements non disponibles pour cette sauvegarde.</p>';return;}
+ const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const owned=E2.owned(data),slots=data.eq2.slots||{},comps=data.eq2.components||0;
+ const equipped=new Set(Object.values(slots).filter(Boolean));
+ const rarity={Mythique:6,'Légendaire':5,'Épique':4,Rare:3,Inhabituel:2,Commun:1};
+ owned.sort((a,b)=>Number(equipped.has(b.id))-Number(equipped.has(a.id))||(rarity[b.rar]||0)-(rarity[a.rar]||0));
+ const cards=owned.map(w=>{
+  const on=equipped.has(w.id),up=E2.upgradeCost(w),opt=E2.optimizeCost(w),yieldComponents=E2.rarityYield(w)+Math.floor((Number(w.investedComponents)||0)*.5);
+  const opts=w.slot==='weapon'?[['dmg','Dégâts'],['rate','Cadence']]:[['efficiency','Efficacité'],['resilience','Résilience'],['agility','Agilité']];
+  const actions=`<button type="button" data-ash-ws-action="upgrade" data-ash-ws-id="${safe(w.id)}" ${!up||data.credits<up.credits||comps<up.components?'disabled':''}>${up?`Renforcer +${Number(w.upgrade||0)} → +${Number(w.upgrade||0)+1} · ${up.credits} crédits + ${up.components} composants`:'Amélioration maximale'}</button>`+
+   `<div class="ash-ws-opt ash-ws-opt-v2"><strong class="ash-ws-opt-heading">OPTIMISATION</strong><small>Choisis une statistique pour voir le résultat avant de payer.</small><div class="ash-ws-opt-choices" role="group" aria-label="Choix de l’optimisation">${opts.map(([key,label])=>`<button type="button" data-ash-ws-preview="${key}" aria-pressed="false" ${w.optimized===key?'disabled':''}>${safe(label)}${w.optimized===key?' ✓':''}</button>`).join('')}</div><div class="ash-ws-opt-preview" aria-live="polite"><p class="ash-ws-detail-hint">Sélectionne une optimisation pour comparer les statistiques.</p></div><small>Coût : ${opt.credits} crédits + ${opt.components} composants${data.credits<opt.credits||comps<opt.components?' · Ressources insuffisantes':''}</small><button type="button" class="ash-ws-opt-confirm" data-ash-ws-action="optimize" data-ash-ws-id="${safe(w.id)}" disabled>Choisir une optimisation</button></div>`+
+   (on?'<small>Objet équipé : recyclage désactivé</small>':`<button type="button" class="ash-ws-recycle" data-ash-ws-action="recycle" data-ash-ws-id="${safe(w.id)}">Recycler · +${yieldComponents} composants</button>`);
+  return `<details class="ash-ws-card ash-ws-compact ash-ws-tile" data-ash-ws-type="${safe(w.slot)}" style="--ash-ws-rarity:${tint(w)}"><summary class="ash-ws-summary"><span class="ash-ws-art">${e2ItemArt(w)}</span><span class="ash-ws-summary-info"><strong>${safe(w.name)}</strong><small>${safe(w.rar)} · Nv ${Number(w.level)||1} · +${Number(w.upgrade)||0}/5</small></span>${on?'<span class="ash-ws-equipped">ÉQUIPÉ</span>':''}</summary><div class="ash-ws-actions ash-ws-detail"><div class="ash-ws-detail-head"><span class="ash-ws-detail-art">${e2ItemArt(w)}</span><div><strong>${safe(w.name)}</strong><small>${safe(w.rar)} · Niveau ${Number(w.level)||1} · +${Number(w.upgrade)||0}/5</small></div></div><p class="ash-ws-detail-hint">${up?`Renforcement de l’objet : +${Number(w.upgrade||0)} vers +${Number(w.upgrade||0)+1}`:'Renforcement maximal (+5)'}</p>${up?ashWsCompare(w):'<p class="ash-ws-detail-hint">Cet objet est déjà au niveau maximal de renforcement.</p>'}${actions}<button type="button" class="ash-ws-close" data-ash-ws-close>Fermer la fiche</button></div></details>`;
+ }).join('');
+ panel.innerHTML=`<div class="ash-ws-hero" aria-label="Présentation de l’Atelier"><span class="ash-ws-kicker">K-17 // UNITÉ DE FABRICATION</span><div class="ash-ws-hero-mark" aria-hidden="true">⚙</div><h2>ATELIER</h2><p>Renforce, optimise et recycle ton équipement pour préparer tes prochaines expéditions.</p><div class="ash-ws-hero-stats"><span>ÉQUIPEMENTS <b>${owned.length}</b></span><span>COMPOSANTS <b>${comps}</b></span></div></div><div class="ash-ws-section-heading"><strong>ÉQUIPEMENTS DISPONIBLES</strong><small>${owned.length} objets · ${data.credits} crédits</small></div><p class="ash-ws-section-help">Choisis une catégorie, puis touche un objet pour accéder à ses améliorations.</p><div class="ash-ws-filters ash-ws-icon-filters" role="group" aria-label="Filtrer les équipements">${ashCompactFilterButton('all','data-ash-ws-filter','all')}${ashCompactFilterButton('weapon','data-ash-ws-filter','all')}${ashCompactFilterButton('armor','data-ash-ws-filter','all')}${ashCompactFilterButton('boots','data-ash-ws-filter','all')}${ashCompactFilterButton('bag','data-ash-ws-filter','all')}${ashCompactFilterButton('module','data-ash-ws-filter','all')}${ashCompactFilterButton('artifact','data-ash-ws-filter','all')}</div><div class="ash-ws-filter-current" aria-live="polite">Tout</div><div class="ash-ws-list">${cards||'<p>Aucun équipement disponible.</p>'}</div><p class="ash-ws-footer-hint">Les objets équipés sont protégés du recyclage.</p>`;
+}
+function ashWorkshopAction(op,id,stat){
+ if(data.run||!data.eq2)return;
+ const w=E2.owned(data).find(x=>x.id===id);if(!w)return;
+ const cost=op==='upgrade'?E2.upgradeCost(w):E2.optimizeCost(w);
+ if(op!=='recycle'&&(!cost||data.credits<cost.credits||data.eq2.components<cost.components))return;
+ if(op==='recycle'){
+  if(Object.values(data.eq2.slots).includes(id))return;
+  const yieldComponents=E2.rarityYield(w)+Math.floor((Number(w.investedComponents)||0)*.5);
+  if(!confirm(`Recycler définitivement ${w.name} pour ${yieldComponents} composants ? Cette opération est irréversible.`))return;
+ }else if(!confirm(`${op==='upgrade'?'Améliorer':'Optimiser'} ${w.name} pour ${cost.credits} crédits et ${cost.components} composants ?`))return;
+ const previous=JSON.stringify(data);let result;
+ try{result=op==='upgrade'?E2.applyUpgrade(data,id):op==='optimize'?E2.applyOptimize(data,id,stat):E2.recycle(data,id)!==null;
+  if(!result||!E2.validate(data)||!persist()){data=JSON.parse(previous);msg('Opération annulée : état ou sauvegarde invalide.');ashWorkshopRender();return;}
+  render();renderRefugeCharacter();ashWorkshopRender();msg('Atelier : opération enregistrée.');
+ }catch(error){data=JSON.parse(previous);ashWorkshopRender();msg('Opération annulée.');}
+}
+document.getElementById('ash-v21-workshop-panel')?.addEventListener('click',e=>{
+ const button=e.target.closest('[data-ash-ws-preview]');if(!button)return;
+ const card=button.closest('.ash-ws-card'),id=card?.querySelector('[data-ash-ws-id]')?.dataset.ashWsId;
+ const w=E2.owned(data).find(x=>x.id===id);if(!w)return;
+ const stat=button.dataset.ashWsPreview,container=button.closest('.ash-ws-opt-v2');
+ container.querySelectorAll('[data-ash-ws-preview]').forEach(b=>{const active=b===button;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
+ container.querySelector('.ash-ws-opt-preview').innerHTML=ashWsOptimizeCompare(w,stat);
+ const confirmButton=container.querySelector('.ash-ws-opt-confirm'),cost=E2.optimizeCost(w);
+ confirmButton.dataset.ashWsStat=stat;
+ confirmButton.disabled=!!(data.credits<cost.credits||data.eq2.components<cost.components);
+ confirmButton.textContent=`Optimiser ${button.textContent.trim()} · ${cost.credits} crédits + ${cost.components} composants`;
+});
+document.getElementById('ash-v21-workshop-panel')?.addEventListener('click',e=>{
+ const button=e.target.closest('[data-ash-ws-action]');if(!button)return;
+ ashWorkshopAction(button.dataset.ashWsAction,button.dataset.ashWsId,button.dataset.ashWsStat);
+});
+ document.getElementById('ash-v21-workshop-panel')?.addEventListener('click',e=>{
+  const filterButton=e.target.closest('[data-ash-ws-filter]');if(!filterButton)return;
+  const panel=document.getElementById('ash-v21-workshop-panel');const chosen=filterButton.dataset.ashWsFilter;
+  panel.querySelectorAll('[data-ash-ws-filter]').forEach(b=>{const selected=b===filterButton;b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected));});
+  panel.querySelectorAll('[data-ash-ws-type]').forEach(card=>{card.hidden=chosen!=='all'&&card.dataset.ashWsType!==chosen;});
+  const current=panel.querySelector('.ash-ws-filter-current');if(current)current.textContent=filterButton.getAttribute('aria-label')||'Tout';
+ });
+document.getElementById('ash-v21-workshop-panel')?.addEventListener('click',e=>{if(e.target.closest('[data-ash-ws-close]')){e.target.closest('details')?.removeAttribute('open');}});
+document.getElementById('ash-v21-workshop-panel')?.addEventListener('toggle',e=>{if(e.target.matches?.('details.ash-ws-tile')&&e.target.open){e.target.parentElement.querySelectorAll('details.ash-ws-tile[open]').forEach(d=>{if(d!==e.target)d.open=false;});}},true);
+document.getElementById('ash-v21-workshop')?.addEventListener('click',()=>ashWorkshopRender());
 
 // 0.8.9.8 — Navigation du refuge dans la même portée que l'état du jeu.
 let refugeActivePage='home';
@@ -3951,7 +4526,7 @@ function refugeNavigate(tab){
  $('home').scrollIntoView({block:'start',behavior:'instant'});
 }
 document.querySelectorAll('[data-refuge-tab]').forEach(b=>b.addEventListener('click',()=>refugeNavigate(b.dataset.refugeTab)));
-$('refuge-page-chests').addEventListener('click',e=>{const buy=e.target.closest('[data-chest-buy]');if(buy){ashChestPurchase(buy.dataset.chestBuy);return;}if(e.target.closest('#ashChestCollect'))ashChestCollect();});
+$('refuge-page-chests').addEventListener('click',e=>{const sub=e.target.closest('[data-chest-subtab]');if(sub){ashChestSwitchTab(sub.dataset.chestSubtab);return;}const claim=e.target.closest('[data-lr-claim]');if(claim){ashClaimLevelReward(claim.dataset.lrClaim);return;}if(e.target.closest('[data-lr-legacy]')){ashSurvivorClaimChest();return;}const buy=e.target.closest('[data-chest-buy]');if(buy){ashChestPurchase(buy.dataset.chestBuy);return;}if(e.target.closest('#ashChestCollect'))ashChestCollect();});
 $('toolsClose').addEventListener('click',()=>{if(refugeActivePage==='merchant')refugeNavigate('home')});
 
 if(!data.run)labMigrate();

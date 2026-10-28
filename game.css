@@ -1002,3 +1002,122 @@ body.ashfall-expedition.ash25-fullscreen #stage #joystickZone{opacity:.77;}
 .ash933-loot-bag .ash927-compare{text-align:center}
 /* Catalogue V1 : véritables illustrations d'objets au bilan de mission. */
 .ash-end-item-art .ash952-gear-img{display:block;width:56px;height:56px;max-width:100%;max-height:100%;object-fit:contain}
+
+/* ASHFALL Refuge V2.3 — atelier compact, mobile-first */
+#ash-v21-workshop-panel .ash-ws-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 8px}
+#ash-v21-workshop-panel .ash-ws-kicker{font-size:10px;letter-spacing:.16em;color:#e4b574;font-weight:800}
+#ash-v21-workshop-panel .ash-ws-header h2{margin:5px 0;font-size:23px}
+#ash-v21-workshop-panel .ash-ws-subtitle{margin:0;color:#a7c0ce;font-size:13px}
+#ash-v21-workshop-panel .ash-ws-resource{flex-shrink:0;min-width:90px;padding:12px;border:1px solid #38637b;border-radius:14px;background:#122e40;text-align:center}
+#ash-v21-workshop-panel .ash-ws-resource small{display:block;color:#a9c7d3;font-size:9px;letter-spacing:.07em}
+#ash-v21-workshop-panel .ash-ws-resource strong{font-size:23px;color:#80dfd3}
+#ash-v21-workshop-panel .ash-ws-wallet{color:#b4cbd7;font-size:12px;margin:0 0 14px}
+#ash-v21-workshop-panel .ash-ws-filters{display:flex;gap:7px;margin-bottom:13px}
+#ash-v21-workshop-panel .ash-ws-filters button{flex:1;min-width:0;padding:10px 5px;border-radius:10px;background:#112c3d;border:1px solid #35586c;color:#c9d9e1;font-size:12px;font-weight:700}
+#ash-v21-workshop-panel .ash-ws-filters button.active{background:#205267;border-color:#75c9d4;color:white}
+#ash-v21-workshop-panel .ash-ws-instruction{font-size:12px;color:#a5bac5;line-height:1.45;margin:0 0 12px}
+#ash-v21-workshop-panel .ash-ws-list{display:grid;gap:8px}
+#ash-v21-workshop-panel details.ash-ws-compact{display:block;margin:0;padding:0;border:1px solid #35596e;border-radius:13px;background:#112d3e;overflow:hidden}
+#ash-v21-workshop-panel details.ash-ws-compact[hidden]{display:none}
+#ash-v21-workshop-panel .ash-ws-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;padding:13px 14px;list-style:none;min-height:64px}
+#ash-v21-workshop-panel .ash-ws-summary::-webkit-details-marker{display:none}
+#ash-v21-workshop-panel .ash-ws-summary-info{display:grid;gap:4px;min-width:0}
+#ash-v21-workshop-panel .ash-ws-summary-info strong{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ash-v21-workshop-panel .ash-ws-summary-info small{font-size:11px;color:#a9c3d1}
+#ash-v21-workshop-panel .ash-ws-summary-side{display:flex;align-items:center;gap:8px;flex-shrink:0}
+#ash-v21-workshop-panel .ash-ws-equipped{font-size:9px;letter-spacing:.02em}
+#ash-v21-workshop-panel .ash-ws-chevron{color:#86cdd2;font-size:24px;line-height:1;transition:transform .15s}
+#ash-v21-workshop-panel details[open] .ash-ws-chevron{transform:rotate(180deg)}
+#ash-v21-workshop-panel .ash-ws-detail{border-top:1px solid #35596e;padding:13px;display:grid;gap:10px}
+#ash-v21-workshop-panel .ash-ws-detail-hint{font-size:12px;color:#a7d6d4;margin:0}
+#ash-v21-workshop-panel .ash-ws-detail button{min-height:44px}
+
+/* ASHFALL Atelier V2.6 — cohérence visuelle avec Laboratoire K-17 */
+#ash-v21-workshop-panel .ash-ws-hero{position:relative;overflow:hidden;border:1px solid #376176;border-radius:16px;padding:23px 18px 18px;margin-bottom:23px;background:radial-gradient(ellipse at 83% 22%,#315261 0%,transparent 47%),linear-gradient(145deg,#112d3d,#091924 78%);box-shadow:inset 0 0 38px #091c29;isolation:isolate}
+#ash-v21-workshop-panel .ash-ws-hero-mark{position:absolute;right:15px;top:4px;font-size:112px;line-height:1;color:#e9b772;opacity:.12;pointer-events:none;transform:rotate(-15deg);z-index:-1}
+#ash-v21-workshop-panel .ash-ws-hero .ash-ws-kicker{font-size:10px;letter-spacing:2px;font-weight:800;color:#e9b772}
+#ash-v21-workshop-panel .ash-ws-hero h2{font-size:27px;letter-spacing:2px;margin:12px 0 6px;color:#f0f5f9}
+#ash-v21-workshop-panel .ash-ws-hero p{font-size:13px;line-height:1.55;max-width:270px;color:#b6cad5;margin:0 0 25px}
+#ash-v21-workshop-panel .ash-ws-hero-stats{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:10px;font-weight:800;letter-spacing:1px;color:#b7cdd9}
+#ash-v21-workshop-panel .ash-ws-hero-stats b{font-size:15px;color:#8ce1d6;letter-spacing:0}
+#ash-v21-workshop-panel .ash-ws-hero-meter{height:7px;border-radius:12px;background:#284657;margin-top:10px;overflow:hidden}
+#ash-v21-workshop-panel .ash-ws-hero-meter i{display:block;width:100%;height:100%;background:linear-gradient(90deg,#996f42,#e9b772);opacity:.85}
+#ash-v21-workshop-panel .ash-ws-section-heading{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 9px}
+#ash-v21-workshop-panel .ash-ws-section-heading strong{font-size:12px;letter-spacing:1.3px;color:#e8f0f4}
+#ash-v21-workshop-panel .ash-ws-section-heading small{font-size:10px;color:#a8bfcb;text-align:right}
+#ash-v21-workshop-panel .ash-ws-section-help{font-size:12px;color:#a9bfcb;line-height:1.5;margin:0 0 14px}
+#ash-v21-workshop-panel .ash-ws-footer-hint{font-size:11px;color:#95b4c1;margin:15px 0 0;text-align:center}
+#ash-v21-workshop-panel .ash-ws-filters{margin-bottom:15px}
+
+/* ASHFALL V2.7 — atelier, comparaison réelle avant/après */
+.ash-ws-compare{margin:14px 0;padding:12px;border:1px solid #446b7b;border-radius:12px;background:rgba(5,24,38,.45);color:#e5f0f3}
+.ash-ws-compare-title{font-weight:800;letter-spacing:.07em;font-size:12px;color:#e9bd79;margin-bottom:12px}
+.ash-ws-compare-head,.ash-ws-stat-row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,.8fr) minmax(0,1fr);gap:8px;align-items:center}
+.ash-ws-compare-head{font-size:10px;letter-spacing:.06em;color:#9fbac4;font-weight:700;padding-bottom:8px;border-bottom:1px solid #355668}
+.ash-ws-stat-row{padding:10px 0;border-bottom:1px solid rgba(120,162,179,.16);font-size:12px}
+.ash-ws-stat-row span:nth-child(n+2){text-align:right;font-variant-numeric:tabular-nums}
+.ash-ws-stat-row .ash-ws-gain{color:#86e3bf;font-weight:700}
+.ash-ws-stat-row em{font-size:10px;font-style:normal;white-space:nowrap}
+.ash-ws-compare-note{display:block;color:#9cb7c2;font-size:11px;line-height:1.5;margin-top:10px}
+@media(max-width:390px){.ash-ws-compare{padding:9px}.ash-ws-stat-row{font-size:11px}.ash-ws-compare-head,.ash-ws-stat-row{gap:5px}}
+
+/* Atelier optimisation preview V2 */
+.ash-ws-opt-v2{display:flex;flex-direction:column;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #355668}
+.ash-ws-opt-heading{font-size:13px;letter-spacing:.09em;color:#e9bd79}
+.ash-ws-opt-choices{display:flex;gap:7px;flex-wrap:wrap}
+.ash-ws-opt-v2 .ash-ws-opt-choices button{flex:1 1 90px;min-width:0;min-height:42px;padding:8px 10px}
+.ash-ws-opt-v2 .ash-ws-opt-choices button.active{border-color:#69d9ec;background:#194356;color:#e8fbff}
+.ash-ws-opt-preview .ash-ws-compare{margin:4px 0 2px}
+.ash-ws-opt-v2 .ash-ws-opt-confirm{width:100%;min-height:48px}
+.ash-ws-opt-compare .ash-ws-loss{color:#f2b1a8}
+.ash-ws-opt-compare .ash-ws-loss em{font-style:normal}
+
+/* Compact optimization selectors — all equipment categories */
+.ash-ws-opt-v2 .ash-ws-opt-choices{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.ash-ws-opt-v2 .ash-ws-opt-choices button{box-sizing:border-box;flex:0 1 auto!important;min-width:94px!important;min-height:36px!important;height:36px!important;padding:6px 13px!important;border-radius:8px!important;font-size:12px!important;line-height:1.15!important}
+
+/* Progression permanente du Survivant V1 */
+.ash-survivor-progress{margin:12px 10px;padding:14px;border:1px solid rgba(84,195,210,.35);border-radius:12px;background:rgba(10,29,40,.82);color:#e6f7fa}.ash-sp-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px}.ash-sp-track{height:8px;margin:10px 0 7px;background:#273d48;border-radius:9px;overflow:hidden}.ash-sp-track>div{height:100%;background:#43bed4;border-radius:9px}.ash-survivor-progress small{display:block;color:#a5c1cb;font-size:11px}.ash-survivor-progress button{margin-top:10px;width:100%;padding:9px;border:1px solid #55bbcb;border-radius:7px;background:#153c4c;color:#e6f7fa;font-weight:700}.ash-sp-debrief{padding:10px 12px;margin:10px 0;border:1px solid rgba(84,195,210,.4);border-radius:8px;color:#c8f2fa;font-size:13px}.ash-sp-debrief strong{font-size:18px}
+
+/* Progression V1 — contrats dans la préparation, niveau sur l'accueil */
+#ashPrepOverlay[hidden]{display:none!important}
+.ash-prep-overlay{position:fixed;inset:0;z-index:99990;background:rgba(2,10,17,.88);display:flex;justify-content:center;align-items:center;padding:12px;box-sizing:border-box}
+.ash-prep-card{width:min(100%,650px);max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;background:linear-gradient(155deg,#142e40,#0b1c2a);border:1px solid #567487;border-radius:20px;padding:16px;box-sizing:border-box;color:#e9f3f6;box-shadow:0 18px 65px #000a}
+.ash-prep-header h2{font-size:23px;margin:7px 0}.ash-prep-header p{color:#a9c0ce;font-size:13px;margin:0 0 10px}
+.ash-prep-actions{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-top:12px}.ash-prep-actions button{min-height:50px;border-radius:12px;font-weight:800;font-size:12px;cursor:pointer}.ash-prep-actions #ashPrepCancel{background:#183245;border:1px solid #526d7c;color:#d8e7ef}.ash-prep-actions #ashPrepConfirm{background:#edc28a;color:#14202b;border:0}
+body.ash-prep-open{overflow:hidden}#refuge-page-home .ash-sp-home{display:block;margin:0 0 14px;padding:14px;border-radius:13px;background:linear-gradient(145deg,#142f40,#0e2433);border:1px solid #496b7c}#refuge-page-home .ash-sp-home .ash-sp-head{flex-wrap:wrap;gap:5px}
+@media(max-width:390px){.ash-prep-card{padding:10px}.ash-prep-actions{gap:7px}.ash-prep-actions button{font-size:11px;padding:8px 5px}}
+
+/* ASHFALL — Premium UI polish V1: one surface, less chrome, clearer hierarchy */
+#refuge-page-home .home-play-panel{border:0!important;background:transparent!important;box-shadow:none!important;padding:0!important;margin-top:16px!important}
+#refuge-page-home .ash-sp-home{margin:0 0 15px!important;padding:12px 2px 14px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+#refuge-page-home .ash-sp-home .ash-sp-head{align-items:baseline;gap:8px;font-size:12px;letter-spacing:.02em}
+#refuge-page-home .ash-sp-home .ash-sp-head strong{font-size:13px;letter-spacing:.08em;color:#e9c28c}
+#refuge-page-home .ash-sp-home .ash-sp-head span{color:#b6cbd6;font-variant-numeric:tabular-nums}
+#refuge-page-home .ash-sp-home .ash-sp-track{height:6px;margin:12px 0 0;background:rgba(108,148,164,.24);border-radius:99px}
+#refuge-page-home .ash-sp-home .ash-sp-track>div{background:linear-gradient(90deg,#d9a963,#f1cb92)}
+.ash-prep-overlay{padding:16px 12px;align-items:center}
+.ash-prep-card{border:1px solid rgba(105,151,168,.34);border-radius:22px;background:linear-gradient(160deg,#142c3d,#0b1c2a 76%);padding:20px 18px;box-shadow:0 24px 70px rgba(0,0,0,.62)}
+.ash-prep-header .ui-eyebrow{font-size:11px;letter-spacing:.18em;color:#e9bc7d}
+.ash-prep-header h2{font-size:23px;letter-spacing:.025em;margin:8px 0 7px}
+.ash-prep-header p{font-size:12px;line-height:1.45;margin:0 0 18px;color:#a7bdc9}
+.ash-contract-picker .home953-heading,.ash-contract-picker .home953-intro{display:none!important}
+.ash-contract-picker .home953-contract{margin-bottom:10px!important;border-color:rgba(104,149,167,.24)!important;background:rgba(9,27,39,.45)!important;box-shadow:none!important}
+.ash-contract-picker .home953-contract:last-child{margin-bottom:0!important}
+.ash-prep-actions{margin-top:17px;gap:10px}
+.ash-prep-actions button{min-height:52px}
+@media(max-width:390px){.ash-prep-card{padding:16px 12px}.ash-prep-header h2{font-size:21px}}
+
+/* ASHFALL difficulty selection — premium refuge palette */
+#ashDifficultyOverlay[hidden]{display:none!important}
+.ash-difficulty-card{max-width:520px}
+.ash-difficulty-options{display:grid;gap:9px;margin:15px 0 4px}
+.ash-difficulty-option{display:flex;align-items:center;gap:13px;padding:12px;border:1px solid rgba(105,151,168,.22);border-radius:12px;background:rgba(15,39,54,.75);color:#dcebf1}
+.ash-difficulty-option.selected{border-color:rgba(235,193,138,.75);background:linear-gradient(115deg,rgba(37,64,69,.96),rgba(18,42,54,.96))}
+.ash-difficulty-option.locked{opacity:.54}
+.ash-difficulty-roman{width:42px;height:42px;flex-shrink:0;display:grid;place-items:center;border-radius:9px;background:#243e4d;color:#adc6d1;font-size:20px;font-weight:800}
+.selected .ash-difficulty-roman{background:#e9c18a;color:#142736}
+.ash-difficulty-option>div{flex:1;display:grid;gap:4px}
+.ash-difficulty-option strong{font-size:13px;letter-spacing:.05em}
+.ash-difficulty-option small{font-size:11px;color:#9fb8c5;line-height:1.3}
+.ash-difficulty-check{color:#e9c18a;font-size:20px}
