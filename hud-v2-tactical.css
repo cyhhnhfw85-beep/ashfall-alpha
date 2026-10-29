@@ -214,3 +214,46 @@ body.ashfall-expedition #stage #joyKnob{
   body.ashfall-expedition #stage #joyBase{border-color:#8de5f5!important}
   body.ashfall-expedition #stage #joyKnob{border-color:#fff!important}
 }
+
+/* HUD VNext Phase 10 — iPhone upper-HUD compacting + unified canvas offset.
+   The previous local --af-hud-h belonged only to #afHudBar while #canvas
+   inherited a distinct :root value. One inherited value now controls BOTH.
+   No internal minimap selectors, map rendering or joystick logic altered. */
+body.ashfall-expedition{
+  --af-hud-h:calc(env(safe-area-inset-top) + 109px);
+}
+body.ashfall-expedition #game #afHudBar{
+  --af-hud-h:inherit;
+  height:var(--af-hud-h)!important;
+  grid-template-rows:minmax(0,1fr) 21px!important;
+  row-gap:2px!important;
+  padding:calc(env(safe-area-inset-top) + 2px) 7px 3px!important;
+}
+body.ashfall-expedition #game #afHudBar #mapBtn{
+  height:clamp(65px,8dvh,80px)!important;
+}
+body.ashfall-expedition #game #afHudBar .af-hud-actions{
+  gap:3px!important;
+}
+body.ashfall-expedition #game #afHudBar #bagBtn{
+  height:clamp(39px,4.8dvh,48px)!important;
+}
+body.ashfall-expedition #game #afHudBar #pauseBtn{
+  height:clamp(28px,3.2dvh,34px)!important;
+}
+body.ashfall-expedition #game #afHudBar .af-status{
+  gap:3px!important;
+  padding:5px 5px 20px!important;
+}
+body.ashfall-expedition #game #afHudBar #ashContractHud{
+  height:21px!important;
+  max-height:21px!important;
+}
+body.ashfall-expedition #game #afHudBar #ashContractHud .af-contract-item{
+  height:20px!important;
+}
+@media(max-width:365px){
+ body.ashfall-expedition #game #afHudBar{
+  padding-left:4px!important;padding-right:4px!important;
+ }
+}
