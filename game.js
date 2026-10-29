@@ -3466,7 +3466,18 @@ document.addEventListener('click',function(event){
   if(current?.svg===svg)return current;
   const w=Number(svg.getAttribute('width')),h=Number(svg.getAttribute('height'));
   if(!(w>0&&h>0))return null;
-  current={viewport,svg,w,h,z:1,points:new Map(),startDist:0,startZoom:1};
+  // Keep the V32 map framing when the UI recreates its SVG or viewport.
+  // The previous DOM node can be detached; only its last recorded view is reused.
+  const previous=current;
+  const z=previous?.z??1;
+  const normX=previous?((previous.viewport.scrollLeft+previous.viewport.clientWidth/2)/(previous.w*previous.z)):0.5;
+  const normY=previous?((previous.viewport.scrollTop+previous.viewport.clientHeight/2)/(previous.h*previous.z)):0.5;
+  current={viewport,svg,w,h,z,points:new Map(),startDist:0,startZoom:z};
+  svg.style.width=(w*z)+'px';svg.style.height=(h*z)+'px';
+  viewport.scrollLeft=Math.max(0,normX*w*z-viewport.clientWidth/2);
+  viewport.scrollTop=Math.max(0,normY*h*z-viewport.clientHeight/2);
+  const label=document.querySelector('[data-v32-map-controls] [data-v32-zoom-label]');
+  if(label)label.textContent=Math.round(z*100)+' %';
   return current;
  }
  function zoomTo(m,z,cx,cy){
