@@ -229,3 +229,36 @@ body.ashfall-expedition #game #afHudBar .af-status:after{
 body.ashfall-expedition #game #afHudBar .af-status:before{
   bottom:5px!important;
 }
+
+
+/* HUD VNext Phase 12 — equal outer heights; mini-map internals untouched.
+   The reference is the combined bag + gap + pause stack. */
+body.ashfall-expedition #game #afHudBar{
+  --af-vnext-panel-height:86px;
+}
+body.ashfall-expedition #game #afHudBar .af-status,
+body.ashfall-expedition #game #afHudBar #mapBtn,
+body.ashfall-expedition #game #afHudBar .af-hud-actions{
+  height:var(--af-vnext-panel-height)!important;
+  min-height:0!important;
+  max-height:var(--af-vnext-panel-height)!important;
+  box-sizing:border-box!important;
+  align-self:center!important;
+}
+body.ashfall-expedition #game #afHudBar .af-hud-actions{
+  justify-content:space-between!important;
+  gap:5px!important;
+}
+body.ashfall-expedition #game #afHudBar #bagBtn{
+  height:50px!important;
+}
+body.ashfall-expedition #game #afHudBar #pauseBtn{
+  height:31px!important;
+}
+/* Only the outer playfield viewport changes: reserve a narrow safety strip
+   under the HUD so the upper room wall is less likely to be clipped.
+   No minimap, room geometry, joystick or camera code is changed. */
+body.ashfall-expedition.ash25-fullscreen #stage #canvas{
+  top:calc(var(--ash25-play-top,100px) + 10px)!important;
+  height:calc(100% - var(--ash25-play-top,100px) - 10px)!important;
+}
