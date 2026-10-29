@@ -61,16 +61,16 @@ body.ashfall-expedition #stage #joyKnob{
 /* HUD VNext phase 03 — health/XP presentation only; retain engine IDs, map, contracts and touch controls. */
 body.ashfall-expedition #game #afHudBar .af-status{
   display:flex!important;flex-direction:column!important;align-items:stretch!important;
-  justify-content:center!important;gap:5px!important;min-width:0!important;
-  padding:8px 5px 23px!important;box-sizing:border-box!important;
+  justify-content:center!important;gap:3px!important;min-width:0!important;
+  padding:5px 5px 23px!important;box-sizing:border-box!important;
   border:1px solid #235c6b;border-radius:9px;
   background:linear-gradient(160deg,#0d2939dd,#081824e8);
 }
 body.ashfall-expedition #game #afHudBar .af-heart{
   display:flex!important;flex-direction:row!important;align-items:center!important;
   justify-content:flex-start!important;gap:3px!important;
-  width:100%!important;height:29px!important;min-width:0!important;
-  padding:0 0 8px!important;position:relative!important;box-sizing:border-box!important;
+  width:100%!important;height:38px!important;min-width:0!important;
+  padding:0 0 14px!important;position:relative!important;box-sizing:border-box!important;
   background:none!important;box-shadow:none!important;border:0!important;
 }
 body.ashfall-expedition #game #afHudBar .af-heart svg{
@@ -78,12 +78,12 @@ body.ashfall-expedition #game #afHudBar .af-heart svg{
 }
 body.ashfall-expedition #game #afHudBar #hpText{
   display:block!important;position:static!important;transform:none!important;
-  font-size:clamp(10px,2.4vw,14px)!important;white-space:nowrap!important;
+  font-size:clamp(15px,3.6vw,21px)!important;white-space:nowrap!important;
   color:#f7e8e9!important;font-weight:850!important;line-height:1!important;
   text-shadow:0 1px 2px #000!important;
 }
 body.ashfall-expedition #game #afHudBar .af-heart:after{
-  content:'';position:absolute;left:2px;right:2px;bottom:0;height:5px;
+  content:'';position:absolute;left:2px;right:2px;bottom:0;height:11px;
   border-radius:4px;background:linear-gradient(90deg,#f15b73 var(--af-hp-progress,100%),#49303e var(--af-hp-progress,100%));
   box-shadow:0 0 0 1px #723545;
 }
@@ -107,7 +107,7 @@ body.ashfall-expedition #game #afHudBar .af-status:before{
 /* HUD VNext phase 04 — three functional zones + secondary contracts row.
    CSS-only: preserve current DOM IDs, HUD update functions, map rendering and joystick. */
 body.ashfall-expedition #game #afHudBar{
-  --af-hud-h:calc(env(safe-area-inset-top) + 127px);
+  --af-hud-h:calc(env(safe-area-inset-top) + 119px);
   height:var(--af-hud-h)!important;
   grid-template-columns:minmax(0,1.30fr) minmax(0,1.18fr) minmax(55px,.60fr)!important;
   grid-template-rows:minmax(0,1fr) 23px!important;
@@ -122,7 +122,7 @@ body.ashfall-expedition #game #afHudBar .af-status{
 }
 body.ashfall-expedition #game #afHudBar #mapBtn{
   grid-column:2!important;grid-row:1!important;
-  height:clamp(73px,9dvh,88px)!important;
+  height:clamp(70px,8.4dvh,80px)!important;
   align-self:center!important;
 }
 body.ashfall-expedition #game #afHudBar .af-hud-actions{
@@ -213,4 +213,19 @@ body.ashfall-expedition #stage #joyKnob{
 @media (prefers-contrast:more){
   body.ashfall-expedition #stage #joyBase{border-color:#8de5f5!important}
   body.ashfall-expedition #stage #joyKnob{border-color:#fff!important}
+}
+
+/* HUD VNext phase 11: explicit containment of enlarged HP and stacked XP. */
+body.ashfall-expedition #game #afHudBar .af-status{
+  overflow:hidden!important;
+}
+body.ashfall-expedition #game #afHudBar .af-heart{
+  flex:0 0 38px!important;
+}
+body.ashfall-expedition #game #afHudBar .af-status:after{
+  bottom:11px!important;
+  line-height:1.1!important;
+}
+body.ashfall-expedition #game #afHudBar .af-status:before{
+  bottom:5px!important;
 }
