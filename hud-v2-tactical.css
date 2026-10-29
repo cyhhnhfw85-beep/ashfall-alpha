@@ -109,7 +109,7 @@ body.ashfall-expedition #game #afHudBar .af-status:before{
 body.ashfall-expedition #game #afHudBar{
   --af-hud-h:calc(env(safe-area-inset-top) + 127px);
   height:var(--af-hud-h)!important;
-  grid-template-columns:minmax(0,1.06fr) minmax(0,1.43fr) minmax(55px,.60fr)!important;
+  grid-template-columns:minmax(0,1.30fr) minmax(0,1.18fr) minmax(55px,.60fr)!important;
   grid-template-rows:minmax(0,1fr) 23px!important;
   column-gap:clamp(4px,1vw,8px)!important;
   row-gap:3px!important;
@@ -122,7 +122,7 @@ body.ashfall-expedition #game #afHudBar .af-status{
 }
 body.ashfall-expedition #game #afHudBar #mapBtn{
   grid-column:2!important;grid-row:1!important;
-  height:clamp(73px,10dvh,98px)!important;
+  height:clamp(73px,9dvh,88px)!important;
   align-self:center!important;
 }
 body.ashfall-expedition #game #afHudBar .af-hud-actions{
@@ -148,7 +148,7 @@ body.ashfall-expedition #game #afHudBar #ashContractHud .af-contract-numbers{
 }
 @media(max-width:365px){
   body.ashfall-expedition #game #afHudBar{
-    grid-template-columns:minmax(0,1.04fr) minmax(0,1.31fr) minmax(53px,.62fr)!important;
+    grid-template-columns:minmax(0,1.25fr) minmax(0,1.10fr) minmax(53px,.62fr)!important;
     column-gap:3px!important;padding-left:4px!important;padding-right:4px!important;
   }
   body.ashfall-expedition #game #afHudBar #ashContractHud{gap:6px!important;}
@@ -213,47 +213,4 @@ body.ashfall-expedition #stage #joyKnob{
 @media (prefers-contrast:more){
   body.ashfall-expedition #stage #joyBase{border-color:#8de5f5!important}
   body.ashfall-expedition #stage #joyKnob{border-color:#fff!important}
-}
-
-/* HUD VNext Phase 10 — iPhone upper-HUD compacting + unified canvas offset.
-   The previous local --af-hud-h belonged only to #afHudBar while #canvas
-   inherited a distinct :root value. One inherited value now controls BOTH.
-   No internal minimap selectors, map rendering or joystick logic altered. */
-body.ashfall-expedition{
-  --af-hud-h:calc(env(safe-area-inset-top) + 109px);
-}
-body.ashfall-expedition #game #afHudBar{
-  --af-hud-h:inherit;
-  height:var(--af-hud-h)!important;
-  grid-template-rows:minmax(0,1fr) 21px!important;
-  row-gap:2px!important;
-  padding:calc(env(safe-area-inset-top) + 2px) 7px 3px!important;
-}
-body.ashfall-expedition #game #afHudBar #mapBtn{
-  height:clamp(65px,8dvh,80px)!important;
-}
-body.ashfall-expedition #game #afHudBar .af-hud-actions{
-  gap:3px!important;
-}
-body.ashfall-expedition #game #afHudBar #bagBtn{
-  height:clamp(39px,4.8dvh,48px)!important;
-}
-body.ashfall-expedition #game #afHudBar #pauseBtn{
-  height:clamp(28px,3.2dvh,34px)!important;
-}
-body.ashfall-expedition #game #afHudBar .af-status{
-  gap:3px!important;
-  padding:5px 5px 20px!important;
-}
-body.ashfall-expedition #game #afHudBar #ashContractHud{
-  height:21px!important;
-  max-height:21px!important;
-}
-body.ashfall-expedition #game #afHudBar #ashContractHud .af-contract-item{
-  height:20px!important;
-}
-@media(max-width:365px){
- body.ashfall-expedition #game #afHudBar{
-  padding-left:4px!important;padding-right:4px!important;
- }
 }
