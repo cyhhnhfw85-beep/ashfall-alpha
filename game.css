@@ -1121,3 +1121,59 @@ body.ash-prep-open{overflow:hidden}#refuge-page-home .ash-sp-home{display:block;
 .ash-difficulty-option strong{font-size:13px;letter-spacing:.05em}
 .ash-difficulty-option small{font-size:11px;color:#9fb8c5;line-height:1.3}
 .ash-difficulty-check{color:#e9c18a;font-size:20px}
+
+/* ASHFALL Tactical Map V2: phone-first legibility, no gameplay changes */
+.ash-map-scroll{display:flex;justify-content:flex-start;align-items:flex-start;max-height:62dvh;padding:12px;scrollbar-width:thin;scrollbar-color:#517c91 #0b1b25;touch-action:pan-x pan-y;background:linear-gradient(160deg,#0b2130,#07131f)!important;border:1px solid #47748b!important}
+.ash-map-full-svg{min-width:0;flex:none;filter:drop-shadow(0 2px 6px #0005)}
+.ash-map-v2-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin:12px 0 5px;font-size:11px;font-weight:700;color:#cbdde9}
+.ash-map-v2-legend span{display:inline-flex;align-items:center;gap:6px}
+.ash-map-v2-legend i{width:9px;height:9px;display:inline-block;border-radius:50%;box-shadow:0 0 7px #ffffff33}
+.ash-map-v2-help{font-size:11px;color:#93b2c5;margin:7px 0}
+#afHudBar #ashMiniMap svg{filter:drop-shadow(0 1px 2px #0008)}
+@media(max-width:440px){.ash-map-scroll{padding:8px;max-height:60dvh}.ash-map-v2-legend{gap:8px 10px}}
+
+/* Tactical Map V2.1 — cartographic legibility */
+.ash-map-scroll{min-height:290px;max-height:58dvh;justify-content:center;align-items:center;overflow:auto;padding:12px!important;background:#081a27!important}
+.ash-map-full-svg{display:block;max-width:none;min-width:100%;height:auto;flex-shrink:0}
+#afHudBar #ashMiniMap svg,.ash-map-mini-svg{display:block;width:100%!important;height:100%!important;max-width:none;filter:none!important}
+.ash-map-annotation text{paint-order:stroke;stroke:#071923;stroke-width:3px;stroke-linejoin:round}
+@media(max-width:440px){.ash-map-scroll{min-height:270px;max-height:55dvh;padding:8px!important}}
+
+/* ASHFALL Tactical Map V2.2 — readability and touch-first map */
+.ash-map-scroll{justify-content:flex-start!important;align-items:flex-start!important;min-height:300px!important;max-height:58dvh!important;overflow:auto!important;touch-action:pan-x pan-y;scrollbar-width:thin;}
+.ash-map-full-svg{min-width:0!important;width:auto!important;height:auto!important;max-width:none!important;flex-shrink:0!important;}
+.ash-map-mini-svg{width:100%!important;height:100%!important;object-fit:contain;}
+.ash-map-poi-title{margin:12px 0 6px;color:#d7e8f1;font-weight:800;font-size:12px;letter-spacing:.09em;}
+.ash-map-poi-list{display:flex;gap:7px;flex-wrap:wrap;}
+.ash-map-poi{border:1px solid #47758b;background:#153043;border-radius:8px;color:#d8ecf5;padding:6px 9px;font-size:12px;}
+.ash-map-poi-empty{font-size:12px;color:#90adbd;}
+
+/* Tactical Map V2.3 — mobile readability and touch targets */
+.ash-map-poi-action{font:inherit;cursor:pointer;color:#d8f0f7;min-height:38px;border:1px solid #4a879e;background:#18374b;border-radius:9px;padding:8px 12px;touch-action:manipulation}
+.ash-map-poi-action:focus-visible,.ash-map-recenter:focus-visible{outline:2px solid #74edf2;outline-offset:2px}
+.ash-map-recenter{margin-left:auto;background:#123f52;border:1px solid #5cb8c8;border-radius:8px;color:#aaf1f4;padding:6px 12px;min-height:34px;cursor:pointer}
+.ash-map-poi-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ash-map-scroll{overscroll-behavior:contain;scrollbar-width:thin}
+.ash-map-mini-svg{width:100%;height:100%;display:block;overflow:hidden}
+#ashMiniMap{overflow:hidden}
+@media(max-width:440px){.ash-map-poi-action{min-height:42px}}
+
+/* ASHFALL Inventory UX V1 — navigation tactile et boutons */
+.ash-inventory-swipe-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0 12px;color:#9ac2d4;font-size:11px;text-align:center;touch-action:pan-y}
+.ash-inventory-swipe-nav button{flex:0 0 38px;min-height:38px;border:1px solid #4c829a;border-radius:9px;background:#183449;color:#a9f4ff;font-size:25px;line-height:1;cursor:pointer}
+.ash-inventory-swipe-nav span{flex:1;min-width:0}
+#inventorySelection,.mr-detail,.ash927-compare{touch-action:pan-y}
+
+/* V2.9 difficulty picker — actionable buttons, accessible focus */
+button.ash-difficulty-option{width:100%;font:inherit;text-align:left;cursor:pointer}
+button.ash-difficulty-option:disabled{cursor:not-allowed}
+button.ash-difficulty-option:focus-visible{outline:2px solid #e9c18a;outline-offset:2px}
+
+/* V2.9.1 — Point doré : récompense de niveau ou ancien bon non réclamé. */
+.refuge-tab.ash-reward-pending,.ash-chest-subtabs button.ash-reward-pending{position:relative}
+.refuge-tab.ash-reward-pending::after,.ash-chest-subtabs button.ash-reward-pending::after{
+ content:"";position:absolute;top:5px;right:6px;width:8px;height:8px;
+ border-radius:50%;background:#edc28b;border:1px solid #fff0cb;
+ box-shadow:0 0 0 2px #142b38,0 0 8px rgba(237,194,139,.75);
+ pointer-events:none;z-index:2;
+}

@@ -8,7 +8,11 @@ function init(){
  const original=[...root.children].filter(el=>el!==showcase);
  for(const el of original)legacy.appendChild(el);
  root.appendChild(legacy);
- const hero=document.createElement('section');hero.className='sv-hero';hero.innerHTML='<h3>MON SURVIVANT</h3>';
+ const hero=document.createElement('section');hero.className='sv-hero';
+ // Keep the existing live power calculation, but present only its total in the heading.
+ const heading=document.querySelector('#refuge-page-character .refuge-section-head');
+ const power=root.querySelector('#ashPowerV3');
+ if(heading&&power){heading.appendChild(power);power.setAttribute('aria-label','Puissance totale');}
  root.insertBefore(hero,legacy);hero.appendChild(showcase);
  const inv=document.createElement('section');inv.className='sv-inventory';inv.innerHTML='<div class="sv-bar"><h3>INVENTAIRE</h3><div class="ash-filter-row"><button type="button" class="sv-filter ash-filter-icon active" data-sv-filter="all" aria-label="Tout" title="Tout" aria-pressed="true"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span></button><button type="button" class="sv-filter ash-filter-icon" data-sv-filter="weapon" aria-label="Armes" title="Armes" aria-pressed="false"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m5 19 14-14M13 5l6 6M4 20l4-1-3-3-1 4Z"/></svg></span></button><button type="button" class="sv-filter ash-filter-icon" data-sv-filter="armor" aria-label="Armures" title="Armures" aria-pressed="false"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3 8 8 10 5-2 8-5 8-10V6l-8-4Z"/><path d="M9 10h6m-3-3v9"/></svg></span></button><button type="button" class="sv-filter ash-filter-icon" data-sv-filter="boots" aria-label="Bottes" title="Bottes" aria-pressed="false"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7v9l3 3h3a2 2 0 0 1 2 2v3H3v-5l4-3V3Z"/><path d="M7 8h7M3 17h19"/></svg></span></button><button type="button" class="sv-filter ash-filter-icon" data-sv-filter="bag" aria-label="Sacs" title="Sacs" aria-pressed="false"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="15" rx="3"/><path d="M9 7V5a3 3 0 0 1 6 0v2M4 13h16M10 13v3h4v-3"/></svg></span></button><button type="button" class="sv-filter ash-filter-icon" data-sv-filter="module" aria-label="Modules" title="Modules" aria-pressed="false"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4m6-4v4M9 18v4m6-4v4M2 9h4m-4 6h4m12-6h4m-4 6h4"/></svg></span></button><button type="button" class="sv-filter ash-filter-icon" data-sv-filter="artifact" aria-label="Artéfacts" title="Artéfacts" aria-pressed="false"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 8 8-8 12L4 10l8-8Z"/><path d="M4 10h16M12 2v20"/></svg></span></button></div></div><div class="sv-grid" id="svGrid"></div>';
  root.insertBefore(inv,legacy);
@@ -28,7 +32,7 @@ function init(){
   if(gear){
    // Reuse the authoritative equipment-engine cards, including the equipped weapon.
    // The equipped weapon is not in the reserve preview, so it needs its own inventory tile.
-   const cards=[...gear.querySelectorAll('.eq2-owned-list > .eq2-owned-card')].filter(source=>{
+   const cards=[...gear.querySelectorAll('.eq2-owned-list .eq2-owned-card')].filter(source=>{
     const weapon=source.closest('.eq2-collection')?.querySelector('summary')?.textContent?.startsWith('Arme équipée');
     if(weapon)return filter==='all'||filter==='weapon'; if(filter==='all')return true; return source.dataset.eq2Slot===filter;
    });
@@ -66,7 +70,7 @@ function init(){
   tiles.forEach(tile=>grid.appendChild(tile));
   if(!grid.children.length){const empty=document.createElement('p');empty.className='sv-empty';empty.textContent='Aucun objet dans cette catégorie.';grid.appendChild(empty);}
  }
- inv.querySelectorAll('[data-sv-filter]').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.svFilter;inv.querySelectorAll('[data-sv-filter]').forEach(x=>x.classList.toggle('active',x===b));refresh()}));
+ inv.querySelectorAll('[data-sv-filter]').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.svFilter;inv.querySelectorAll('[data-sv-filter]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-pressed',String(x===b));});refresh()}));
  // Slot tap opens real equipment configurator, and weapon slot uses existing weapon list.
  showcase.querySelectorAll('[data-eq2-portrait-slot]').forEach(slot=>{slot.setAttribute('role','button');slot.tabIndex=0;const handler=()=>{const target=slot.dataset.eq2PortraitSlot||'all';filter=target;inv.querySelectorAll('[data-sv-filter]').forEach(x=>(x.classList.toggle('active',x.dataset.svFilter===filter),x.setAttribute('aria-pressed',String(x.dataset.svFilter===filter))));refresh();const equipped=[...grid.querySelectorAll('.sv-item.sv-is-equipped')].find(x=>x.dataset.svSlot===target);if(equipped){equipped.click();return;}inv.scrollIntoView({block:'nearest',behavior:'smooth'});} ;slot.addEventListener('click',handler);slot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();handler()}})});
  // Engine repaints its UI; reflect results after the engine's own render cycle.

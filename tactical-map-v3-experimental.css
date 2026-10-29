@@ -1,0 +1,11 @@
+/* Laboratory only: maps based on real V32 room rectangles. */
+#ashMiniMap svg.ash-v3-live {width:100%!important;height:100%!important;display:block;background:#091d2c;}
+.ash-map-scroll svg.ash-v3-live {display:block;background:#091d2c;max-width:none;}
+.ash-v3-live {touch-action:pan-x pan-y;}
+
+/* V32 main tactical map only. No effect on V31 */
+.ash-v3-zoom-controls{display:flex;align-items:center;gap:7px;margin:8px 0 9px;flex-wrap:wrap}
+.ash-v3-zoom-controls button{background:#16364b;color:#c7f8fc;border:1px solid #457d94;border-radius:8px;min-height:35px;min-width:37px;padding:5px 11px;font-weight:700}
+.ash-v3-zoom-controls [data-v32-zoom-label]{font-size:12px;color:#a8c4d5;min-width:46px;text-align:center}
+.ash-map-scroll[data-v32-map-viewport]{justify-content:flex-start!important;align-items:flex-start!important;touch-action:none!important;overflow:auto!important}
+.ash-map-scroll[data-v32-map-viewport] svg.ash-v3-live{display:block!important;flex:none!important;max-width:none!important;touch-action:none!important}

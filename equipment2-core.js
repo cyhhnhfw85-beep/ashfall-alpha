@@ -27,8 +27,32 @@
   {id:'artifact-noyau-instable',slot:'artifact',name:'Noyau instable',effect:'frenzy',base:0.045,desc:'Renforce les enchaînements offensifs'},
   {id:'artifact-fragment-ether',slot:'artifact',name:'Fragment d’éther',effect:'xp',base:0.12,desc:'Expérience gagnée améliorée'},
  ];
- const LEGACY=[]; // Les anciennes familles ne sont plus disponibles.
- const CATALOG_ALL=CATALOG;
+ const LEGACY=[]; // Legacy loadout migration disabled; no implicit item conversion.
+// Compatibility records for restored pre-catalogue items. These are NOT added to loot pools.
+// The historical balancing tables are unavailable: effects use the nearest current family
+// as an explicit provisional fallback, retaining each item's original model/rarity/level.
+ const LEGACY_MODEL_ALIASES=Object.freeze({
+  'armor-bastion': 'armor-bastion-x',
+  'armor-predator': 'armor-reactor',
+  'armor-regenerator': 'armor-sentinelle',
+  'boots-scout': 'boots-velocis',
+  'boots-spectre': 'boots-impulsion',
+  'boots-anchor': 'boots-ancrage',
+  'module-tesla': 'module-amplificateur',
+  'module-aegis': 'module-stabilisateur',
+  'module-medic': 'module-regenerateur',
+  'bag-prospector': 'bag-scout',
+  'bag-reclaimer': 'bag-raven',
+  'bag-securizer': 'bag-dastion',
+  'artifact-resonance': 'artifact-oeil-vide',
+  'artifact-vitality': 'artifact-coeur-cendre',
+  'artifact-frenzy': 'artifact-noyau-instable',
+ });
+ const LEGACY_COMPAT=Object.freeze(Object.entries(LEGACY_MODEL_ALIASES).map(([id,reference])=>{
+  const base=CATALOG.find(m=>m.id===reference);
+  return Object.freeze({...base,id,name:id,legacyCompatibility:true});
+ }));
+ const CATALOG_ALL=[...CATALOG,...LEGACY_COMPAT];
  const RANK={Commun:0,Inhabituel:1,Rare:2,'Épique':3,'Légendaire':4,Mythique:5};
  const SAFE_ID=s=>String(s||'').replace(/[^a-zA-Z0-9-_]/g,'').slice(0,120);
  const copy=x=>JSON.parse(JSON.stringify(x));
@@ -42,12 +66,14 @@
  const buff=x=>{const m=model(x);if(!m)return {};return {[m.effect]:(m.base||0)*(x.origin==='legacy-conversion'?1:rarityFactor(x))*(1+.075*clamp(x.upgrade||0,0,5))*(x.optimized==='efficiency'?1.08:1)*(clamp(Number(x.quality)||100,94,106)/100)};};
  function normalizeWeapon(w){if(!w||typeof w!=='object')return null;return {...w,slot:'weapon',model:w.model||'weapon-legacy',level:clamp(Number(w.level)||1,1,4),upgrade:clamp(Number(w.upgrade)||0,0,5),optimized:w.optimized||null,investedComponents:Number(w.investedComponents)||0};}
  function eq2State(d){return d.eq2&&d.eq2.schema===2?d.eq2:null;}
- function gearItems(d){return eq2State(d)?.gear||[];}
+ function gearItems(d){const gear=eq2State(d)?.gear;return Array.isArray(gear)?gear:[];}
  function owned(d){return [d.equipped,...(d.stash||[]),...gearItems(d)].filter(Boolean).map(w=>(!w.slot||w.slot==='weapon')?normalizeWeapon(w):w);}
  function validate(d){const s=eq2State(d);if(!s)return false;
+  if(!Array.isArray(s.gear)||!s.slots||typeof s.slots!=='object')return false;
   const items=owned(d);const allIds=items.map(x=>x.id);
   if(new Set(allIds).size!==allIds.length)return false;
   if(items.some(x=>!hasStats(x)))return false;
+  if(items.some(x=>x.slot!=='weapon'&&(!model(x)||model(x).slot!==x.slot)))return false;
   if(Object.keys(s.slots||{}).some(k=>!SLOTS.includes(k)))return false;
   for(const [k,id] of Object.entries(s.slots||{})){if(id&&!items.some(x=>x.id===id&&x.slot===k))return false;}
   return Number.isSafeInteger(s.components)&&s.components>=0;
@@ -68,14 +94,21 @@
   if(!validate(out))throw Error('post migration integrity check failed');
   return out;
  }
- // Loot expedition V1: difficulty I is introductory; upper rarities remain reserved for future tiers.
- const EXPEDITION_ODDS=Object.freeze({enemy:[68,25,6.5,.5],chest:[50,34,14,2],arena:[35,40,22,3]});
+ // Difficulty loot table V2.9: six rarities, normalized per 100 draws.
+ const EXPEDITION_RARITIES=['Commun','Inhabituel','Rare','Épique','Légendaire','Mythique'];
+ const EXPEDITION_ODDS=Object.freeze([
+  [60,28,10,1.8,.18,.02],
+  [42,33,18,6,.9,.1],
+  [25,30,27,15,2.7,.3],
+  [12,20,35,25,7,1],
+  [5,10,30,35,16,4]
+ ]);
  function rollExpeditionRarity(source='enemy',difficulty=1,rng=Math.random){
-  // Difficulties II-V are not playable yet: never pre-award their prestigious loot.
-  const weights=EXPEDITION_ODDS[source]||EXPEDITION_ODDS.enemy;
-  const roll=rng()*100;let sum=0;
-  for(let i=0;i<weights.length;i++){sum+=weights[i];if(roll<sum)return ['Commun','Inhabituel','Rare','Épique'][i];}
-  return 'Commun';
+  const tier=clamp(Math.floor(Number(difficulty)||1),1,5);
+  const weights=EXPEDITION_ODDS[tier-1];
+  const roll=Math.min(99.999999999,Math.max(0,Number(rng())||0)*100);let sum=0;
+  for(let i=0;i<weights.length;i++){sum+=weights[i];if(roll<sum)return EXPEDITION_RARITIES[i];}
+  return EXPEDITION_RARITIES[5];
  }
  function generate(slot,sector=0,rng=Math.random,source='enemy',difficulty=1){
   if(!SLOTS.includes(slot))throw Error('unknown equipment slot');
@@ -95,7 +128,7 @@
   if(!validateRun(run))throw Error('invalid run at startup');return run;
  }
  function validateRun(run){if(!run?.eq2)return false;const s=run.eq2;
-  if(!Array.isArray(s.loot)||s.loot.length>capacity(run)||new Set(s.loot.map(x=>x.id)).size!==s.loot.length)return false;
+  if(!Array.isArray(s.startingOwned)||!s.slots||!s.startingSlots||!s.secure||!Array.isArray(s.loot)||s.loot.length>capacity(run)||new Set(s.loot.map(x=>x.id)).size!==s.loot.length)return false;
   if(s.loot.some(x=>!hasStats(x)))return false;
   const pool=[...s.startingOwned,...s.loot];if(new Set(pool.map(x=>x.id)).size!==pool.length)return false;
   if(SLOTS.some(slot=>s.slots[slot]&&!pool.some(x=>x.id===s.slots[slot]&&x.slot===slot)))return false;
@@ -134,8 +167,8 @@
   const activeWeapon=owned(out).find(w=>w.id===desired.weapon)||out.equipped;
   if(activeWeapon&&out.equipped?.id!==activeWeapon.id){out.stash=out.stash.filter(w=>w.id!==activeWeapon.id);if(out.equipped)out.stash.push(out.equipped);out.equipped=activeWeapon;}
   curr.slots=desired;
-  const prospector=active(run,'bag')?.model==='bag-scout'&&won;
-  const gatherer=active(run,'bag')?.model==='bag-raven'&&won;
+  const prospector=['bag-scout','bag-prospector'].includes(active(run,'bag')?.model)&&won;
+  const gatherer=['bag-raven','bag-reclaimer'].includes(active(run,'bag')?.model)&&won;
   const creditsBonus=prospector?Math.min(80,Math.floor((run.earnedCredits||0)*.02)):0;
   const compsBonus=gatherer&&new Set(run.visited||[]).size>=15?1:0;
   curr.components+=compsBonus;
