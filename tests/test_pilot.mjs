@@ -1,0 +1,11 @@
+import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';
+const src=fs.readFileSync(new URL('../renderer/peripherie-pilot.js',import.meta.url),'utf8');
+const window={};vm.runInNewContext(src,{window,Math,Number,Array,Object});
+const p=window.AshPeripheryPilot;assert.equal(typeof p.floor,'function');assert.equal(typeof p.walls,'function');
+assert.equal(p.seed({id:12,kind:'standard'}),p.seed({id:12,kind:'standard'}));
+assert.notEqual(p.seed({id:12,kind:'standard'}),p.seed({id:13,kind:'standard'}));
+const obstacles=[[10,20,50,40]];const doors=[{x:40,y:0,w:30,h:20,locked:true}];
+const c={canvas:{width:360,height:400},save(){},restore(){},beginPath(){},rect(){},clip(){},fillRect(){},strokeRect(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){},fillText(){},createLinearGradient(){return {addColorStop(){}}},createRadialGradient(){return {addColorStop(){}}}};
+p.floor(c,{id:2,kind:'standard'},obstacles);p.walls(c,{id:2,kind:'standard'},[[0,0,35,20]],doors);
+assert.deepEqual(obstacles,[[10,20,50,40]]);assert.deepEqual(doors,[{x:40,y:0,w:30,h:20,locked:true}]);
+console.log('PASS | API, déterminisme, exécution Canvas simulée, absence de mutation données fournies');
